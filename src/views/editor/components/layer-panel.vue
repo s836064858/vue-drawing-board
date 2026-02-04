@@ -4,9 +4,26 @@
       <i class="ri-layers-line icon"></i>
       <h3>图层管理</h3>
     </div>
-    <div class="panel-content custom-scrollbar">
+    <div class="panel-content custom-scrollbar" @dragover.prevent @drop="onPanelDrop">
       <div v-if="layers.length > 0" class="layer-list">
-        <div v-for="layer in layers" :key="layer.id" class="layer-item" :class="{ active: isSelected(layer.id) }" @click="handleSelect(layer)">
+        <div
+          v-for="layer in layers"
+          :key="layer.id"
+          class="layer-item"
+          :class="{
+            active: isSelected(layer.id),
+            'is-dragging': draggingId === layer.id,
+            'drag-over-top': dragOverId === layer.id && dropPosition === 'before',
+            'drag-over-bottom': dragOverId === layer.id && dropPosition === 'after'
+          }"
+          draggable="true"
+          @click="handleSelect(layer)"
+          @dragstart="onDragStart($event, layer)"
+          @dragover.prevent="onDragOver($event, layer)"
+          @dragleave="onDragLeave($event)"
+          @drop.stop="onDrop($event, layer)"
+          @dragend="onDragEnd"
+        >
           <!-- 选中指示条 -->
           <div class="active-bar" v-show="isSelected(layer.id)"></div>
 
@@ -44,10 +61,15 @@
 </template>
 
 <script setup>
-import { computed, inject } from 'vue'
+import { computed, inject, ref } from 'vue'
 import { useStore } from 'vuex'
 
 const store = useStore()
+
+// 拖拽状态
+const draggingId = ref(null)
+const dragOverId = ref(null)
+const dropPosition = ref(null) // 'before' | 'after'
 
 // 从 Store 获取图层数据
 const layers = computed(() => store.state.layers)
@@ -58,6 +80,74 @@ const getCanvasCore = inject('getCanvasCore')
 const getCore = () => {
   if (getCanvasCore) return getCanvasCore()
   return null
+}
+
+// 拖拽事件处理
+const onDragStart = (e, layer) => {
+  draggingId.value = layer.id
+  e.dataTransfer.effectAllowed = 'move'
+  // 设置拖拽数据，以便调试或跨应用拖拽（可选）
+  e.dataTransfer.setData('text/plain', layer.id)
+
+  // 添加透明度效果
+  e.target.style.opacity = '0.5'
+}
+
+const onDragOver = (e, layer) => {
+  // 不允许拖拽到自己身上
+  if (draggingId.value === layer.id) {
+    dragOverId.value = null
+    dropPosition.value = null
+    return
+  }
+
+  dragOverId.value = layer.id
+
+  // 计算鼠标在元素内的位置，决定是上方还是下方
+  const rect = e.currentTarget.getBoundingClientRect()
+  const offsetY = e.clientY - rect.top
+
+  if (offsetY < rect.height / 2) {
+    dropPosition.value = 'before'
+  } else {
+    dropPosition.value = 'after'
+  }
+}
+
+const onDragLeave = (e) => {
+  // 这里需要小心，dragleave 会在进入子元素时触发
+  // 简单处理：不清除 dragOverId，只在 drop 或 end 时清除
+  // 或者通过判断 relatedTarget
+}
+
+const onDrop = (e, targetLayer) => {
+  e.preventDefault()
+
+  if (draggingId.value && draggingId.value !== targetLayer.id) {
+    const core = getCore()
+    if (core) {
+      core.reorderLayer(draggingId.value, targetLayer.id, dropPosition.value)
+    }
+  }
+
+  // 清理状态
+  clearDragState()
+}
+
+const onPanelDrop = (e) => {
+  // 处理拖拽到面板空白处的情况（如果需要）
+  clearDragState()
+}
+
+const onDragEnd = (e) => {
+  e.target.style.opacity = ''
+  clearDragState()
+}
+
+const clearDragState = () => {
+  draggingId.value = null
+  dragOverId.value = null
+  dropPosition.value = null
 }
 
 // 修复高亮：使用类型安全的比较
@@ -177,6 +267,30 @@ const getTypeIcon = (type) => {
 .layer-item.active {
   background-color: var(--el-color-primary-light-9);
   color: var(--el-color-primary);
+}
+
+.layer-item.drag-over-top::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background-color: var(--el-color-primary);
+  z-index: 10;
+  pointer-events: none;
+}
+
+.layer-item.drag-over-bottom::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background-color: var(--el-color-primary);
+  z-index: 10;
+  pointer-events: none;
 }
 
 .active-bar {
