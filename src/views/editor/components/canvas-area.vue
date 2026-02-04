@@ -9,6 +9,7 @@ import { CanvasCore } from '@/core/CanvasCore'
 
 const store = useStore()
 const canvasRef = ref(null)
+const emit = defineEmits(['mode-change'])
 let canvasCore = null
 
 onMounted(() => {
@@ -20,6 +21,9 @@ onMounted(() => {
       },
       onSelectionChange: (selectedIds) => {
         store.commit('setSelectedLayerIds', selectedIds)
+      },
+      onModeChange: (mode) => {
+        emit('mode-change', mode)
       }
     })
 

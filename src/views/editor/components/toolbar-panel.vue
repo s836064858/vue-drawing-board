@@ -1,21 +1,33 @@
 <template>
   <div class="toolbar-panel">
     <el-tooltip content="选择模式 (V)" placement="top">
-      <div class="tool-item" :class="{ active: activeTool === 'select' }">
+      <div class="tool-item" :class="{ active: activeTool === 'select' }" @click="handleToolClick('select')">
         <i class="ri-cursor-fill"></i>
       </div>
     </el-tooltip>
 
     <div class="divider"></div>
 
-    <el-tooltip content="矩形 (R)" placement="top">
-      <div class="tool-item" @click="handleToolClick('rect')">
-        <i class="ri-shape-line"></i>
-      </div>
-    </el-tooltip>
+    <el-dropdown trigger="click" @command="handleShapeCommand">
+      <span class="dropdown-trigger">
+        <el-tooltip content="形状" placement="top">
+          <div class="tool-item" :class="{ active: ['rect', 'diamond', 'ellipse'].includes(activeTool) }">
+            <i class="ri-shape-line"></i>
+            <i class="ri-arrow-down-s-fill arrow-icon"></i>
+          </div>
+        </el-tooltip>
+      </span>
+      <template #dropdown>
+        <el-dropdown-menu>
+          <el-dropdown-item command="rect"> <i class="ri-rectangle-line" style="margin-right: 6px"></i>矩形 </el-dropdown-item>
+          <el-dropdown-item command="diamond"> <i class="ri-vip-diamond-line" style="margin-right: 6px"></i>菱形 </el-dropdown-item>
+          <el-dropdown-item command="ellipse"> <i class="ri-circle-line" style="margin-right: 6px"></i>圆形 </el-dropdown-item>
+        </el-dropdown-menu>
+      </template>
+    </el-dropdown>
 
     <el-tooltip content="文字 (T)" placement="top">
-      <div class="tool-item" @click="handleToolClick('text')">
+      <div class="tool-item" :class="{ active: activeTool === 'text' }" @click="handleToolClick('text')">
         <i class="ri-text"></i>
       </div>
     </el-tooltip>
@@ -23,17 +35,27 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { defineProps, defineEmits } from 'vue'
 
-const activeTool = ref('select')
+const props = defineProps({
+  activeTool: {
+    type: String,
+    default: 'select'
+  }
+})
+
 const emit = defineEmits(['tool-change'])
 
 const handleToolClick = (tool) => {
-  if (tool === 'rect') {
-    emit('tool-change', { type: 'action', value: 'add-rect' })
-  } else if (tool === 'text') {
-    emit('tool-change', { type: 'action', value: 'add-text' })
+  if (tool === 'text') {
+    emit('tool-change', { type: 'mode', value: 'text' })
+  } else if (tool === 'select') {
+    emit('tool-change', { type: 'mode', value: 'select' })
   }
+}
+
+const handleShapeCommand = (command) => {
+  emit('tool-change', { type: 'mode', value: command })
 }
 </script>
 
@@ -73,6 +95,12 @@ const handleToolClick = (tool) => {
 
 .tool-item i {
   font-size: 20px;
+}
+
+.arrow-icon {
+  font-size: 12px !important;
+  margin-left: 2px;
+  color: #909399;
 }
 
 .divider {

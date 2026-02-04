@@ -1,4 +1,4 @@
-import { App, Rect, Text, Group, ChildEvent, PropertyEvent } from 'leafer-ui'
+import { App, Rect, Text, Group, ChildEvent, PropertyEvent, PointerEvent, Ellipse, Polygon } from 'leafer-ui'
 import '@leafer-in/editor'
 import '@leafer-in/text-editor'
 import '@leafer-in/find'
@@ -22,6 +22,7 @@ export class CanvasCore {
     })
 
     this.callbacks = callbacks
+    this.mode = 'select' // 当前模式: select, text, rect, etc.
     this.init()
   }
 
@@ -53,7 +54,7 @@ export class CanvasCore {
     // 注意：监听所有 PropertyEvent 可能会有性能影响，实际项目中需按需监听或防抖
     tree.on(PropertyEvent.CHANGE, (e) => {
       // 过滤掉不影响图层列表的属性变化
-      const relevantProps = ['visible', 'locked', 'name', 'tag', 'zIndex']
+      const relevantProps = ['visible', 'locked', 'name', 'tag', 'zIndex', 'text']
       if (relevantProps.includes(e.attrName)) {
         this.syncLayers()
       }
@@ -63,6 +64,148 @@ export class CanvasCore {
     editor.on(EditorEvent.SELECT, () => {
       this.syncSelection()
     })
+
+    // 监听画布点击（用于放置元素）
+    this.app.on(PointerEvent.TAP, this.handleTap)
+
+    // 监听拖拽绘制（用于矩形等）
+    this.app.on(PointerEvent.DOWN, this.handlePointerDown)
+    this.app.on(PointerEvent.MOVE, this.handlePointerMove)
+    this.app.on(PointerEvent.UP, this.handlePointerUp)
+  }
+
+  handleTap = (e) => {
+    // 如果是文本模式，点击添加文本
+    if (this.mode === 'text') {
+      // 获取点击坐标
+      // Leafer 的事件对象 e 包含 x, y (世界坐标)
+      this.addText(e.x, e.y)
+
+      // 添加完后切换回选择模式
+      this.setMode('select')
+    }
+  }
+
+  handlePointerDown = (e) => {
+    if (['rect', 'ellipse', 'diamond'].includes(this.mode)) {
+      // 禁用编辑器，避免干扰
+      this.app.editor.cancel()
+
+      this.isDrawing = true
+      this.startPoint = { x: e.x, y: e.y }
+
+      // 根据模式创建初始图形
+      if (this.mode === 'rect') {
+        this.currentDrawingShape = new Rect({
+          x: e.x,
+          y: e.y,
+          width: 0,
+          height: 0,
+          fill: '#32cd79',
+          editable: true,
+          draggable: true,
+          cornerRadius: 10,
+          name: '矩形'
+        })
+      } else if (this.mode === 'ellipse') {
+        this.currentDrawingShape = new Ellipse({
+          x: e.x,
+          y: e.y,
+          width: 0,
+          height: 0,
+          fill: '#32cd79',
+          editable: true,
+          draggable: true,
+          name: '圆形'
+        })
+      } else if (this.mode === 'diamond') {
+        // 菱形使用多边形，初始化时只需设置基本属性，具体点在 move 中计算
+        this.currentDrawingShape = new Polygon({
+          x: e.x,
+          y: e.y,
+          width: 0,
+          height: 0,
+          fill: '#32cd79',
+          editable: true,
+          draggable: true,
+          points: [], // 初始空点
+          name: '菱形'
+        })
+      }
+
+      this.app.tree.add(this.currentDrawingShape)
+    }
+  }
+
+  handlePointerMove = (e) => {
+    if (this.isDrawing && this.currentDrawingShape) {
+      const currentX = e.x
+      const currentY = e.y
+
+      // 计算新的位置和尺寸
+      const width = Math.abs(currentX - this.startPoint.x)
+      const height = Math.abs(currentY - this.startPoint.y)
+      const x = Math.min(currentX, this.startPoint.x)
+      const y = Math.min(currentY, this.startPoint.y)
+
+      if (this.mode === 'diamond') {
+        // 更新菱形：需要更新 x, y, width, height 以便正确包围，同时更新 points
+        // 菱形的四个顶点相对于 (0,0) 的宽高：(w/2, 0), (w, h/2), (w/2, h), (0, h/2)
+        // Polygon 的 points 是相对于自身的
+        this.currentDrawingShape.set({
+          x,
+          y,
+          width,
+          height,
+          points: [width / 2, 0, width, height / 2, width / 2, height, 0, height / 2]
+        })
+      } else {
+        // 矩形和圆形
+        this.currentDrawingShape.set({ x, y, width, height })
+      }
+    }
+  }
+
+  handlePointerUp = (e) => {
+    if (this.isDrawing) {
+      this.isDrawing = false
+
+      if (this.currentDrawingShape) {
+        // 如果图形太小，视为无效操作，移除它
+        if (this.currentDrawingShape.width < 5 || this.currentDrawingShape.height < 5) {
+          this.currentDrawingShape.remove()
+        } else {
+          // 选中新绘制的图形
+          this.app.editor.select(this.currentDrawingShape)
+        }
+      }
+
+      this.currentDrawingShape = null
+      this.startPoint = null
+
+      // 绘制完成后切回选择模式
+      this.setMode('select')
+    }
+  }
+
+  setMode(mode) {
+    this.mode = mode
+
+    // 根据模式调整光标或编辑器状态
+    if (mode === 'text') {
+      this.app.cursor = 'text'
+      this.app.editor.cancel() // 取消当前选中
+    } else if (['rect', 'ellipse', 'diamond'].includes(mode)) {
+      this.app.cursor = 'crosshair'
+      this.app.editor.cancel()
+    } else {
+      this.app.cursor = 'auto'
+    }
+
+    // 触发模式变更回调
+    if (this.callbacks.onModeChange) {
+      this.callbacks.onModeChange(mode)
+    }
   }
 
   syncLayers() {
@@ -71,7 +214,7 @@ export class CanvasCore {
         .filter((child) => !['SimulateElement'].includes(child.tag))
         .map((child) => ({
           id: child.innerId,
-          name: child.name || child.tag || child.innerId,
+          name: child.tag === 'Text' ? child.text || '文本' : child.name || child.tag || child.innerId,
           type: child.tag,
           visible: child.visible !== false,
           locked: child.locked === true
@@ -95,7 +238,7 @@ export class CanvasCore {
     // 按下 Backspace 或 Delete 键
     if (e.key === 'Backspace' || e.key === 'Delete') {
       // 确保没有在输入框中
-      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.isContentEditable) return
 
       this.removeSelectedLayers()
     }
@@ -154,30 +297,12 @@ export class CanvasCore {
   }
 
   /**
-   * 添加一个矩形
+   * 添加文字 (内部调用)
    */
-  addRect() {
-    const rect = new Rect({
-      x: 100,
-      y: 100,
-      width: 100,
-      height: 100,
-      fill: '#32cd79',
-      editable: true,
-      draggable: true,
-      cornerRadius: 10
-    })
-    this.app.tree.add(rect)
-    return rect
-  }
-
-  /**
-   * 添加文字
-   */
-  addText() {
+  addText(x, y) {
     const text = new Text({
-      x: 250,
-      y: 100,
+      x: x,
+      y: y,
       text: '双击编辑文字',
       fill: '#333',
       fontSize: 24,
@@ -185,6 +310,8 @@ export class CanvasCore {
       draggable: true
     })
     this.app.tree.add(text)
+    // 自动选中新添加的元素
+    this.app.editor.select(text)
     return text
   }
 

@@ -97,7 +97,11 @@ const handleRemove = (layer) => {
 const getTypeIcon = (type) => {
   switch (type) {
     case 'Rect':
-      return 'ri-shape-line'
+      return 'ri-rectangle-line'
+    case 'Ellipse':
+      return 'ri-circle-line'
+    case 'Polygon':
+      return 'ri-vip-diamond-line'
     case 'Text':
       return 'ri-text'
     case 'Group':
