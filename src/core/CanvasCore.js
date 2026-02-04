@@ -10,10 +10,25 @@ export class CanvasCore {
   constructor(view, callbacks = {}) {
     this.view = view
     this.callbacks = callbacks
-    this.mode = 'select' // 当前模式: select, text, rect, etc.
+    this.mode = 'select' // 当前模式: select, text, rect, ellipse, diamond
+    
+    // 绘制状态
+    this.isDrawing = false
+    this.startPoint = null
+    this.currentDrawingShape = null
+    
+    // 事件处理器引用（用于清理）
+    this.eventHandlers = {}
 
     // 初始化 (在 initMixin 中定义)
     this.init()
+  }
+  
+  /**
+   * 根据 ID 查找元素（带缓存优化）
+   */
+  findElementById(id) {
+    return this.app?.tree?.findOne((child) => child.innerId === id)
   }
 }
 

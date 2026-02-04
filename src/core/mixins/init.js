@@ -9,6 +9,11 @@ import { Snap } from 'leafer-x-easy-snap'
 
 export const initMixin = {
   init() {
+    if (!this.view) {
+      console.error('CanvasCore: view element is required')
+      return
+    }
+
     this.app = new App({
       view: this.view,
       editor: {},
@@ -28,28 +33,42 @@ export const initMixin = {
   },
 
   initPlugins() {
-    // 初始化点阵背景
-    this.dotMatrix = new DotMatrix(this.app)
-    this.dotMatrix.enableDotMatrix(true)
+    try {
+      // 初始化点阵背景
+      this.dotMatrix = new DotMatrix(this.app)
+      this.dotMatrix.enableDotMatrix(true)
 
-    // 初始化吸附功能
-    this.snap = new Snap(this.app)
-    this.snap.enable(true)
+      // 初始化吸附功能
+      this.snap = new Snap(this.app)
+      this.snap.enable(true)
+    } catch (error) {
+      console.error('CanvasCore: Failed to initialize plugins', error)
+    }
   },
 
   /**
-   * 销毁实例
+   * 销毁实例，清理所有事件监听和资源
    */
   destroy() {
-    if (this.app) {
-      if (this.__handleKeydown) window.removeEventListener('keydown', this.__handleKeydown)
-      if (this.__handlePaste) window.removeEventListener('paste', this.__handlePaste)
-      if (this.app.view) {
-        if (this.__handleDragOver) this.app.view.removeEventListener('dragover', this.__handleDragOver)
-        if (this.__handleDrop) this.app.view.removeEventListener('drop', this.__handleDrop)
-      }
-      this.app.destroy()
-      this.app = null
+    if (!this.app) return
+
+    // 清理全局事件监听
+    const { keydown, paste, dragover, drop } = this.eventHandlers
+    if (keydown) window.removeEventListener('keydown', keydown)
+    if (paste) window.removeEventListener('paste', paste)
+    
+    if (this.app.view) {
+      if (dragover) this.app.view.removeEventListener('dragover', dragover)
+      if (drop) this.app.view.removeEventListener('drop', drop)
     }
+
+    // 清理插件
+    if (this.dotMatrix) this.dotMatrix = null
+    if (this.snap) this.snap = null
+
+    // 销毁应用实例
+    this.app.destroy()
+    this.app = null
+    this.eventHandlers = {}
   }
 }

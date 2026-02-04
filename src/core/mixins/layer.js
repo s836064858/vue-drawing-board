@@ -1,65 +1,105 @@
 export const layerMixin = {
+  /**
+   * 同步图层列表到外部
+   */
   syncLayers() {
-    if (this.callbacks.onLayersChange) {
-      const layers = this.app.tree.children
-        .filter((child) => !['SimulateElement'].includes(child.tag))
-        .map((child) => ({
-          id: child.innerId,
-          name: child.tag === 'Text' ? child.text || '文本' : child.name || child.tag || child.innerId,
-          type: child.tag,
-          visible: child.visible !== false,
-          locked: child.locked === true
-        }))
-        .reverse()
+    if (!this.callbacks.onLayersChange) return
 
-      this.callbacks.onLayersChange(layers)
+    const excludedTags = new Set(['SimulateElement'])
+    const layers = this.app.tree.children
+      .filter((child) => !excludedTags.has(child.tag))
+      .map((child) => this.formatLayerData(child))
+      .reverse()
+
+    this.callbacks.onLayersChange(layers)
+  },
+
+  /**
+   * 格式化图层数据
+   */
+  formatLayerData(child) {
+    return {
+      id: child.innerId,
+      name: this.getLayerName(child),
+      type: child.tag,
+      visible: child.visible !== false,
+      locked: child.locked === true
     }
   },
 
+  /**
+   * 获取图层显示名称
+   */
+  getLayerName(child) {
+    if (child.tag === 'Text') {
+      return child.text || '文本'
+    }
+    return child.name || child.tag || child.innerId
+  },
+
+  /**
+   * 同步选中状态到外部
+   */
   syncSelection() {
-    if (this.callbacks.onSelectionChange) {
-      const selectedIds = this.app.editor.list.map((item) => item.innerId)
-      this.callbacks.onSelectionChange(selectedIds)
-    }
+    if (!this.callbacks.onSelectionChange) return
+
+    const selectedIds = this.app.editor.list.map((item) => item.innerId)
+    this.callbacks.onSelectionChange(selectedIds)
   },
 
+  /**
+   * 删除选中的图层
+   */
   removeSelectedLayers() {
     const selected = this.app.editor.list
-    if (selected.length > 0) {
-      // 复制一份列表，因为 remove 会改变 list
-      const list = [...selected]
-      list.forEach((item) => item.remove())
-      this.app.editor.cancel() // 清除选中状态
-    }
+    if (selected.length === 0) return
+
+    // 复制列表，因为 remove 会改变原列表
+    const list = [...selected]
+    list.forEach((item) => item.remove())
+    this.app.editor.cancel()
   },
 
+  /**
+   * 选中指定图层
+   */
   selectLayer(id) {
-    const element = this.app.tree.findOne((child) => child.innerId === id)
+    const element = this.findElementById(id)
+
     if (element) {
       this.app.editor.select(element)
     } else {
       this.app.editor.cancel()
     }
-    // 手动触发一次同步，确保 UI 高亮及时更新
+
     this.syncSelection()
   },
 
+  /**
+   * 切换图层可见性
+   */
   toggleVisible(id) {
-    const element = this.app.tree.findOne((child) => child.innerId === id)
+    const element = this.findElementById(id)
     if (element) {
       element.visible = !element.visible
     }
   },
 
+  /**
+   * 切换图层锁定状态
+   */
   toggleLock(id) {
-    const element = this.app.tree.findOne((child) => child.innerId === id)
+    const element = this.findElementById(id)
     if (element) {
       element.locked = !element.locked
     }
   },
 
+  /**
+   * 删除指定图层
+   */
   removeLayer(id) {
-    const element = this.app.tree.findOne((child) => child.innerId === id)
+    const element = this.findElementById(id)
     if (element) {
       element.remove()
     }
@@ -69,44 +109,33 @@ export const layerMixin = {
    * 图层重排序
    * @param {string} dragId 拖拽元素的ID
    * @param {string} targetId 目标元素的ID
-   * @param {string} position 'before' | 'after' (相对于目标元素在图层列表中的位置 - 视觉上)
-   * 注意：图层列表是倒序显示的 (z-index大的在上面)，所以：
-   * position 'before' (视觉上方) -> z-index 更大 -> children 数组中在 target 后面
-   * position 'after' (视觉下方) -> z-index 更小 -> children 数组中在 target 前面
+   * @param {string} position 'before' | 'after' (相对于目标元素在图层列表中的位置)
+   *
+   * 注意：图层列表是倒序显示的 (z-index大的在上面)
+   * - position 'before' (视觉上方) -> z-index 更大 -> children 数组中在 target 后面
+   * - position 'after' (视觉下方) -> z-index 更小 -> children 数组中在 target 前面
    */
   reorderLayer(dragId, targetId, position) {
-    const dragLayer = this.app.tree.findOne((child) => child.innerId === dragId)
-    const targetLayer = this.app.tree.findOne((child) => child.innerId === targetId)
+    const dragLayer = this.findElementById(dragId)
+    const targetLayer = this.findElementById(targetId)
 
-    if (dragLayer && targetLayer && dragLayer !== targetLayer) {
-      // 先移除拖拽元素
-      dragLayer.remove()
+    if (!dragLayer || !targetLayer || dragLayer === targetLayer) return
 
-      // 获取目标元素在当前 children 中的索引
-      // 注意：remove() 之后，索引可能会变，所以要在 remove 之后再次确认 target 的索引
-      // 或者使用 addBefore / addAfter (如果 Leafer 支持)
-      // 假设 Leafer 的 Group 支持 addAt 或者 addAfter/addBefore
-      // 查看 Leafer 文档或源码，通常有 add(child, index) 或者直接操作 list
+    // 移除拖拽元素
+    dragLayer.remove()
 
-      // 尝试使用 children 数组操作
-      const children = this.app.tree.children
-      const targetIndex = children.indexOf(targetLayer)
+    // 获取目标元素索引（在 remove 之后）
+    const children = this.app.tree.children
+    const targetIndex = children.indexOf(targetLayer)
 
-      if (targetIndex !== -1) {
-        if (position === 'before') {
-          // 视觉上方 -> z-index 更大 -> 插入到 target 后面
-          this.app.tree.add(dragLayer, targetIndex + 1)
-        } else {
-          // 视觉下方 -> z-index 更小 -> 插入到 target 前面
-          this.app.tree.add(dragLayer, targetIndex)
-        }
-      } else {
-        // 如果找不到目标（异常情况），直接添加到最后（最顶层）
-        this.app.tree.add(dragLayer)
-      }
-
-      // 触发同步
-      this.syncLayers()
+    if (targetIndex === -1) {
+      // 异常情况，添加到最顶层
+      this.app.tree.add(dragLayer)
+    } else {
+      const insertIndex = position === 'before' ? targetIndex + 1 : targetIndex
+      this.app.tree.add(dragLayer, insertIndex)
     }
+
+    this.syncLayers()
   }
 }
