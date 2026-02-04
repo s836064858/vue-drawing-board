@@ -94,7 +94,9 @@ export const eventMixin = {
         const file = item.getAsFile()
         if (file) {
           const url = URL.createObjectURL(file)
-          this.addImage(url, { x: e.offsetX, y: e.offsetY })
+          // 转换屏幕坐标到世界坐标
+          const point = this.app.tree.getInnerPoint({ x: e.offsetX, y: e.offsetY })
+          this.addImage(url, { x: point.x, y: point.y })
         }
       }
     }

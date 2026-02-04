@@ -37,15 +37,15 @@ const MODE_CONFIGS = {
 export const toolMixin = {
   setMode(mode) {
     this.mode = mode
-    
+
     const config = MODE_CONFIGS[mode] || MODE_CONFIGS.select
-    
+
     // 应用模式配置
     this.app.cursor = config.cursor
     this.app.editor.visible = config.editorVisible
     this.app.editor.hittable = config.editorHittable
     this.app.tree.hitChildren = config.hitChildren
-    
+
     // 取消当前选中（除了 select 模式）
     if (mode !== 'select') {
       this.app.editor.cancel()
@@ -106,17 +106,60 @@ export const toolMixin = {
    * 添加图片
    */
   addImage(url, options = {}) {
-    const image = new Image({
-      url: url,
-      x: options.x || 100,
-      y: options.y || 100,
-      editable: true,
-      draggable: true,
-      name: '图片'
-    })
-    this.app.tree.add(image)
-    this.app.editor.select(image)
-    return image
+    // 使用原生的 Image 对象预加载以获取尺寸
+    const img = new window.Image()
+    img.src = url
+    img.onload = () => {
+      // 获取视口信息
+      const tree = this.app.tree
+      const { width: appWidth, height: appHeight } = this.app
+      const scaleX = tree.scaleX || 1
+      const scaleY = tree.scaleY || 1
+
+      // 视口在世界坐标系下的范围
+      const viewport = {
+        x: -tree.x / scaleX,
+        y: -tree.y / scaleY,
+        width: appWidth / scaleX,
+        height: appHeight / scaleY
+      }
+
+      let width = img.width
+      let height = img.height
+
+      // 1. 尺寸适配：如果图片大于视口的 80%，则等比缩放
+      const maxW = viewport.width * 0.8
+      const maxH = viewport.height * 0.8
+
+      if (width > maxW || height > maxH) {
+        const ratio = Math.min(maxW / width, maxH / height)
+        width *= ratio
+        height *= ratio
+      }
+
+      // 2. 位置适配
+      let x = options.x
+      let y = options.y
+
+      if (x === undefined || y === undefined) {
+        // 如果未指定位置，居中显示
+        x = viewport.x + (viewport.width - width) / 2
+        y = viewport.y + (viewport.height - height) / 2
+      }
+
+      const image = new Image({
+        url: url,
+        x: x,
+        y: y,
+        width: width,
+        height: height,
+        editable: true,
+        draggable: true,
+        name: '图片'
+      })
+      this.app.tree.add(image)
+      this.app.editor.select(image)
+    }
   },
 
   /**
@@ -135,7 +178,7 @@ export const toolMixin = {
       editable: true,
       draggable: true
     })
-    
+
     this.app.tree.add(text)
     this.app.editor.select(text)
     return text
