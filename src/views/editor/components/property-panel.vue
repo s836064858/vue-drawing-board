@@ -384,15 +384,48 @@
         </div>
 
         <!-- Stroke -->
-        <div class="style-row">
-          <div class="style-label">描边</div>
-          <div class="stroke-controls">
-            <div class="color-picker-wrapper" :class="{ disabled: formData.locked }">
-              <el-color-picker v-model="formData.stroke" show-alpha size="small" :disabled="formData.locked" @change="(val) => updateProperty('stroke', val)" />
-              <span class="color-text">{{ getDisplayColor(currentElement?.stroke) }}</span>
-            </div>
-            <div class="property-input-wrapper" style="width: 80px">
-              <div class="input-label">宽度</div>
+        <div class="style-section">
+          <div class="style-row">
+            <div class="style-label">描边</div>
+            <el-popover
+              v-model:visible="showStrokePopover"
+              placement="left-start"
+              :width="320"
+              trigger="click"
+              :popper-options="{
+                modifiers: [
+                  {
+                    name: 'preventOverflow',
+                    options: {
+                      padding: 8
+                    }
+                  }
+                ]
+              }"
+            >
+              <template #reference>
+                <div class="fill-preview">
+                  <div 
+                    class="fill-preview-box" 
+                    :style="{ background: getFillPreview(formData.stroke) }"
+                  ></div>
+                  <span class="fill-type-text">{{ getFillTypeText(formData.stroke) }}</span>
+                </div>
+              </template>
+              <div @click.stop>
+                <GradientEditor
+                  v-model="formData.stroke"
+                  :element-type="currentElement?.tag"
+                  @change="(val) => updateProperty('stroke', val)"
+                />
+              </div>
+            </el-popover>
+          </div>
+          
+          <!-- 描边宽度 -->
+          <div class="style-row" style="margin-top: 8px">
+            <div class="style-label" style="width:120px">描边宽度</div>
+            <div class="property-input-wrapper" style="flex: 1">
               <el-input-number
                 v-model="formData.strokeWidth"
                 :controls="false"
@@ -400,7 +433,7 @@
                 :min="0"
                 size="small"
                 :disabled="formData.locked"
-                class="figma-input input-with-label-2"
+                class="figma-input"
                 @change="(val) => updateProperty('strokeWidth', val)"
               />
             </div>
