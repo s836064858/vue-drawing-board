@@ -1,5 +1,6 @@
 {
   "name": "Sung Drawing",
+  "description": "基于 Vue 3 + Leafer UI 的高性能矢量绘图工具。支持钢笔、形状绘制、图层管理及多格式导出，提供类似 Figma 的专业设计体验。",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -33,6 +34,7 @@
   },
   "devDependencies": {
     "@vitejs/plugin-vue": "^6.0.1",
-    "vite": "^7.2.4"
+    "vite": "^7.2.4",
+    "vite-plugin-compression": "^0.5.1"
   }
 }

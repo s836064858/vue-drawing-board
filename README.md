@@ -4,6 +4,8 @@
 
 > **基于 Leafer UI 的高性能矢量绘图工具**
 
+🔗 **在线预览**: [https://s836064858.github.io/sung-drawing/](https://s836064858.github.io/sung-drawing/)
+
 ## 📖 项目定位
 
 Sung Drawing 是一款基于 **Vue 3** + **Leafer UI** 开发的专业级矢量绘图工具。它提供了类似 Figma/Sketch 的操作体验，支持高性能的图形渲染和复杂的交互逻辑，旨在为开发者提供一个可扩展的 Web 绘图引擎解决方案。
