@@ -1,8 +1,8 @@
 <template>
-  <div class="layer-panel">
+  <div class="layer-panel" @click.stop>
     <div class="panel-header">
       <i class="ri-layers-line icon"></i>
-      <h3>图层管理</h3>
+      <h3>图层</h3>
     </div>
     <div class="panel-content custom-scrollbar" @dragover.prevent @drop="onPanelDrop">
       <div v-if="layers.length > 0" class="layer-list">
@@ -27,7 +27,11 @@
       </div>
       <!-- 空状态 -->
       <div v-else class="empty-state">
-        <el-empty description="暂无图层" :image-size="80" />
+        <div class="empty-icon">
+          <i class="ri-stack-line"></i>
+        </div>
+        <div class="empty-text">暂无图层</div>
+        <div class="empty-subtext">在画布上绘制或添加元素</div>
       </div>
     </div>
   </div>
@@ -155,31 +159,31 @@ const handleRemove = (layer) => {
 }
 
 .panel-header {
-  height: 50px;
-  padding: 0 16px;
+  height: 40px;
+  padding: 0 12px;
   display: flex;
   align-items: center;
-  border-bottom: 1px solid #e5e7eb;
+  border-bottom: 1px solid #f3f4f6;
   background-color: #fff;
 }
 
 .panel-header h3 {
   margin: 0;
-  font-size: 15px;
+  font-size: 13px;
   font-weight: 600;
-  color: #1f2937;
+  color: #374151;
 }
 
 .icon {
-  margin-right: 10px;
-  font-size: 18px;
-  color: #4b5563;
+  margin-right: 8px;
+  font-size: 16px;
+  color: #6b7280;
 }
 
 .panel-content {
   flex: 1;
-  overflow-y: auto;
-  padding: 8px 0;
+  overflow-y: overlay;
+  padding: 4px 0;
 }
 
 .layer-list {
@@ -192,16 +196,41 @@ const handleRemove = (layer) => {
   width: 4px;
 }
 .custom-scrollbar::-webkit-scrollbar-thumb {
-  background: #d1d5db;
+  background: transparent;
   border-radius: 2px;
+}
+.custom-scrollbar:hover::-webkit-scrollbar-thumb {
+  background: #d1d5db;
 }
 .custom-scrollbar::-webkit-scrollbar-track {
   background: transparent;
 }
 
+/* 空状态样式 */
 .empty-state {
   display: flex;
+  flex-direction: column;
+  align-items: center;
   justify-content: center;
-  padding-top: 40px;
+  padding-top: 60px;
+  color: #9ca3af;
+}
+
+.empty-icon {
+  font-size: 32px;
+  margin-bottom: 8px;
+  opacity: 0.5;
+}
+
+.empty-text {
+  font-size: 13px;
+  font-weight: 500;
+  color: #6b7280;
+  margin-bottom: 4px;
+}
+
+.empty-subtext {
+  font-size: 12px;
+  color: #9ca3af;
 }
 </style>

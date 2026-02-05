@@ -21,11 +21,7 @@
       <div class="active-bar" v-show="isSelected"></div>
 
       <!-- 展开/收起按钮 (仅 Frame 有子元素时显示) -->
-      <div
-        v-if="hasChildren"
-        class="expand-btn"
-        @click.stop="toggleExpand"
-      >
+      <div v-if="hasChildren" class="expand-btn" @click.stop="toggleExpand">
         <i :class="isExpanded ? 'ri-arrow-down-s-line' : 'ri-arrow-right-s-line'"></i>
       </div>
       <div v-else class="expand-placeholder"></div>
@@ -38,21 +34,13 @@
 
       <div class="layer-actions">
         <!-- 锁定切换 -->
-        <div
-          class="layer-action lock-btn"
-          @click.stop="$emit('toggle-lock', layer)"
-          :class="{ 'is-locked': layer.locked }"
-        >
+        <div class="layer-action lock-btn" @click.stop="$emit('toggle-lock', layer)" :class="{ 'is-locked': layer.locked }">
           <i v-if="layer.locked" class="ri-lock-2-line"></i>
           <i v-else class="ri-lock-unlock-line"></i>
         </div>
 
         <!-- 显隐切换 -->
-        <div
-          class="layer-action visible-btn"
-          @click.stop="$emit('toggle-visible', layer)"
-          :class="{ 'is-hidden': !layer.visible }"
-        >
+        <div class="layer-action visible-btn" @click.stop="$emit('toggle-visible', layer)" :class="{ 'is-hidden': !layer.visible }">
           <i :class="layer.visible ? 'ri-eye-line' : 'ri-eye-off-line'"></i>
         </div>
 
@@ -118,17 +106,7 @@ const props = defineProps({
   }
 })
 
-defineEmits([
-  'select',
-  'toggle-visible',
-  'toggle-lock',
-  'remove',
-  'drag-start',
-  'drag-over',
-  'drag-leave',
-  'drop',
-  'drag-end'
-])
+defineEmits(['select', 'toggle-visible', 'toggle-lock', 'remove', 'drag-start', 'drag-over', 'drag-leave', 'drop', 'drag-end'])
 
 const isExpanded = ref(true)
 
@@ -181,17 +159,18 @@ const getTypeIcon = (type) => {
   position: relative;
   display: flex;
   align-items: center;
-  height: 40px;
-  padding-right: 12px;
+  height: 32px;
+  padding-right: 8px;
   cursor: pointer;
-  margin: 0 8px 2px 8px;
-  border-radius: 6px;
-  transition: all 0.2s ease;
+  margin: 0 4px 1px 4px;
+  border-radius: 4px;
+  transition: all 0.1s ease;
   color: #374151;
+  font-size: 12px;
 }
 
 .layer-item:hover {
-  background-color: #f3f4f6;
+  background-color: var(--el-fill-color-light);
 }
 
 .layer-item.active {
@@ -202,7 +181,7 @@ const getTypeIcon = (type) => {
 .layer-item.drag-over-top::before {
   content: '';
   position: absolute;
-  top: 0;
+  top: -1px;
   left: 0;
   right: 0;
   height: 2px;
@@ -214,7 +193,7 @@ const getTypeIcon = (type) => {
 .layer-item.drag-over-bottom::after {
   content: '';
   position: absolute;
-  bottom: 0;
+  bottom: -1px;
   left: 0;
   right: 0;
   height: 2px;
@@ -223,38 +202,33 @@ const getTypeIcon = (type) => {
   pointer-events: none;
 }
 
+/* 选中状态指示条 - 稍微调整样式 */
 .active-bar {
-  position: absolute;
-  left: 0;
-  top: 8px;
-  bottom: 8px;
-  width: 3px;
-  background-color: var(--el-color-primary);
-  border-top-right-radius: 2px;
-  border-bottom-right-radius: 2px;
+  display: none; /* 暂时隐藏侧边条，使用背景色高亮更符合Figma风格 */
 }
 
 .expand-btn {
-  width: 20px;
-  height: 20px;
+  width: 16px;
+  height: 16px;
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 4px;
+  border-radius: 2px;
   cursor: pointer;
-  color: #6b7280;
-  font-size: 16px;
-  margin-right: 4px;
+  color: #9ca3af;
+  font-size: 14px;
+  margin-right: 2px;
   flex-shrink: 0;
 }
 
 .expand-btn:hover {
   background-color: rgba(0, 0, 0, 0.05);
+  color: #4b5563;
 }
 
 .expand-placeholder {
-  width: 20px;
-  margin-right: 4px;
+  width: 16px;
+  margin-right: 2px;
   flex-shrink: 0;
 }
 
@@ -262,20 +236,21 @@ const getTypeIcon = (type) => {
   flex: 1;
   display: flex;
   align-items: center;
-  margin: 0 8px;
+  margin: 0 4px;
   overflow: hidden;
 }
 
 .name-text {
-  font-size: 13px;
+  font-size: 12px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  line-height: 1.2;
 }
 
 .type-icon {
-  margin-right: 8px;
-  font-size: 15px;
+  margin-right: 6px;
+  font-size: 14px;
   opacity: 0.7;
   flex-shrink: 0;
 }
@@ -283,20 +258,21 @@ const getTypeIcon = (type) => {
 .layer-actions {
   display: flex;
   align-items: center;
+  margin-left: auto; /* Push to right */
 }
 
 .layer-action {
-  width: 24px;
-  height: 24px;
+  width: 20px;
+  height: 20px;
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 4px;
+  border-radius: 3px;
   color: #9ca3af;
-  font-size: 15px;
+  font-size: 13px;
   opacity: 0;
   transition: all 0.2s;
-  margin-left: 2px;
+  margin-left: 1px;
   flex-shrink: 0;
 }
 
