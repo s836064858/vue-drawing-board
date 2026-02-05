@@ -302,16 +302,18 @@
               <el-color-picker v-model="formData.stroke" show-alpha size="small" @change="(val) => updateProperty('stroke', val)" />
               <span class="color-text" v-if="!formData.strokeWidth">{{ getDisplayColor(currentElement?.stroke) }}</span>
             </div>
-            <el-input-number
-              v-model="formData.strokeWidth"
-              :controls="false"
-              :precision="1"
-              :min="0"
-              size="small"
-              class="figma-input"
-              style="width: 60px"
-              @change="(val) => updateProperty('strokeWidth', val)"
-            />
+            <div class="property-input-wrapper" style="width: 80px">
+              <div class="input-label">宽度</div>
+              <el-input-number
+                v-model="formData.strokeWidth"
+                :controls="false"
+                :precision="1"
+                :min="0"
+                size="small"
+                class="figma-input input-with-label-2"
+                @change="(val) => updateProperty('strokeWidth', val)"
+              />
+            </div>
           </div>
         </div>
 
