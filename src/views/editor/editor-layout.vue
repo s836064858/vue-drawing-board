@@ -1,7 +1,15 @@
 <template>
   <el-container class="editor-layout">
-    <el-aside width="250px">
-      <layer-panel />
+    <el-aside width="250px" class="left-aside">
+      <div class="app-brand">
+        <div class="logo-wrapper">
+          <img :src="logoUrl" alt="Logo" class="logo-img" />
+        </div>
+        <span class="app-title">Sung Drawing</span>
+      </div>
+      <div class="layer-panel-container">
+        <layer-panel />
+      </div>
     </el-aside>
     <el-main class="main-content">
       <canvas-area ref="canvasAreaRef" @mode-change="handleModeChange" />
@@ -23,6 +31,7 @@ import CanvasArea from './components/canvas-area.vue'
 import PropertyPanel from './components/property-panel.vue'
 import ToolbarPanel from './components/toolbar-panel.vue'
 import SizeInfo from './components/size-info.vue'
+import logoUrl from '@/assets/image/logo.png'
 
 const canvasAreaRef = ref(null)
 const activeTool = ref('select')
@@ -77,6 +86,55 @@ const handleToolChange = (event) => {
   height: 100vh;
   width: 100vw;
   overflow: hidden;
+}
+
+.left-aside {
+  display: flex;
+  flex-direction: column;
+  border-right: 1px solid #e5e7eb;
+  background-color: #fff;
+  z-index: 10;
+}
+
+.app-brand {
+  height: 56px;
+  display: flex;
+  align-items: center;
+  padding: 0 16px;
+  border-bottom: 1px solid #f3f4f6;
+  flex-shrink: 0;
+}
+
+.logo-wrapper {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 12px;
+}
+
+.logo-img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.app-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: #1f2937;
+  letter-spacing: -0.5px;
+}
+
+.layer-panel-container {
+  flex: 1;
+  overflow: hidden;
+}
+
+/* 覆盖 layer-panel 的边框，因为已经移到 aside 上了 */
+:deep(.layer-panel) {
+  border-right: none !important;
 }
 
 .main-content {
