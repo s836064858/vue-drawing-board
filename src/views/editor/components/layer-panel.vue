@@ -1,7 +1,7 @@
 <template>
   <div class="layer-panel" @click.stop>
     <div class="panel-header">
-      <i class="ri-layers-line icon"></i>
+      <i class="ri-stack-line icon"></i>
       <h3>图层</h3>
     </div>
     <div class="panel-content custom-scrollbar" @dragover.prevent @drop="onPanelDrop">
@@ -27,11 +27,11 @@
       </div>
       <!-- 空状态 -->
       <div v-else class="empty-state">
-        <div class="empty-icon">
+        <div class="empty-icon-wrapper">
           <i class="ri-stack-line"></i>
         </div>
-        <div class="empty-text">暂无图层</div>
-        <div class="empty-subtext">在画布上绘制或添加元素</div>
+        <div class="empty-title">暂无图层</div>
+        <div class="empty-desc">在画布上绘制或从工具栏<br />添加元素以开始创作</div>
       </div>
     </div>
   </div>
@@ -208,29 +208,42 @@ const handleRemove = (layer) => {
 
 /* 空状态样式 */
 .empty-state {
+  height: 100%;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding-top: 60px;
   color: #9ca3af;
+  padding-bottom: 40px;
 }
 
-.empty-icon {
+.empty-icon-wrapper {
+  width: 64px;
+  height: 64px;
+  background-color: #f3f4f6;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 16px;
+}
+
+.empty-icon-wrapper i {
   font-size: 32px;
-  margin-bottom: 8px;
-  opacity: 0.5;
-}
-
-.empty-text {
-  font-size: 13px;
-  font-weight: 500;
-  color: #6b7280;
-  margin-bottom: 4px;
-}
-
-.empty-subtext {
-  font-size: 12px;
   color: #9ca3af;
+}
+
+.empty-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #374151;
+  margin-bottom: 8px;
+}
+
+.empty-desc {
+  font-size: 12px;
+  color: #6b7280;
+  text-align: center;
+  line-height: 1.5;
 }
 </style>
