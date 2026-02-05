@@ -16,6 +16,7 @@
               v-model="formData.x"
               :controls="false"
               :precision="1"
+              :disabled="formData.locked"
               size="small"
               class="figma-input"
               @change="(val) => updateProperty('x', val)"
@@ -27,6 +28,7 @@
               v-model="formData.y"
               :controls="false"
               :precision="1"
+              :disabled="formData.locked"
               size="small"
               class="figma-input"
               @change="(val) => updateProperty('y', val)"
@@ -41,6 +43,7 @@
               v-model="formData.rotation"
               :controls="false"
               :precision="1"
+              :disabled="formData.locked"
               size="small"
               class="figma-input input-with-label-2"
               @change="(val) => updateProperty('rotation', val)"
@@ -51,10 +54,20 @@
           <div class="property-input-wrapper">
             <!-- Flip icons as buttons for now -->
             <div class="flip-actions">
-              <div class="icon-btn" :class="{ active: formData.scaleX < 0 }" title="水平翻转" @click="toggleFlip('horizontal')">
+              <div
+                class="icon-btn"
+                :class="{ active: formData.scaleX < 0, disabled: formData.locked }"
+                title="水平翻转"
+                @click="!formData.locked && toggleFlip('horizontal')"
+              >
                 <i class="ri-refund-line" style="transform: rotate(90deg)"></i>
               </div>
-              <div class="icon-btn" :class="{ active: formData.scaleY < 0 }" title="垂直翻转" @click="toggleFlip('vertical')">
+              <div
+                class="icon-btn"
+                :class="{ active: formData.scaleY < 0, disabled: formData.locked }"
+                title="垂直翻转"
+                @click="!formData.locked && toggleFlip('vertical')"
+              >
                 <i class="ri-refund-line"></i>
               </div>
             </div>
@@ -73,6 +86,7 @@
               :controls="false"
               :precision="1"
               :min="0"
+              :disabled="formData.locked"
               size="small"
               class="figma-input"
               @change="(val) => updateProperty('width', val)"
@@ -85,6 +99,7 @@
               :controls="false"
               :precision="1"
               :min="0"
+              :disabled="formData.locked"
               size="small"
               class="figma-input"
               @change="(val) => updateProperty('height', val)"
@@ -107,6 +122,7 @@
                 class="figma-select"
                 placeholder="字体"
                 :loading="isLoadingFont"
+                :disabled="formData.locked"
                 loading-text="加载字体中..."
                 @change="(val) => updateProperty('fontFamily', val)"
               >
@@ -121,6 +137,7 @@
                 size="small"
                 class="figma-select"
                 placeholder="字重"
+                :disabled="formData.locked"
                 @change="(val) => updateProperty('fontWeight', val)"
               >
                 <el-option label="Regular" value="normal" />
@@ -135,22 +152,26 @@
                 <el-tooltip content="粗体" placement="top">
                   <div
                     class="icon-btn"
-                    :class="{ active: formData.fontWeight === 'bold' }"
-                    @click="updateProperty('fontWeight', formData.fontWeight === 'bold' ? 'normal' : 'bold')"
+                    :class="{ active: formData.fontWeight === 'bold', disabled: formData.locked }"
+                    @click="!formData.locked && updateProperty('fontWeight', formData.fontWeight === 'bold' ? 'normal' : 'bold')"
                   >
                     <i class="ri-bold"></i>
                   </div>
                 </el-tooltip>
                 <el-tooltip content="斜体" placement="top">
-                  <div class="icon-btn" :class="{ active: formData.italic }" @click="updateProperty('italic', !formData.italic)">
+                  <div
+                    class="icon-btn"
+                    :class="{ active: formData.italic, disabled: formData.locked }"
+                    @click="!formData.locked && updateProperty('italic', !formData.italic)"
+                  >
                     <i class="ri-italic"></i>
                   </div>
                 </el-tooltip>
                 <el-tooltip content="下划线" placement="top">
                   <div
                     class="icon-btn"
-                    :class="{ active: formData.textDecoration === 'under' }"
-                    @click="updateProperty('textDecoration', formData.textDecoration === 'under' ? 'none' : 'under')"
+                    :class="{ active: formData.textDecoration === 'under', disabled: formData.locked }"
+                    @click="!formData.locked && updateProperty('textDecoration', formData.textDecoration === 'under' ? 'none' : 'under')"
                   >
                     <i class="ri-underline"></i>
                   </div>
@@ -158,8 +179,8 @@
                 <el-tooltip content="删除线" placement="top">
                   <div
                     class="icon-btn"
-                    :class="{ active: formData.textDecoration === 'delete' }"
-                    @click="updateProperty('textDecoration', formData.textDecoration === 'delete' ? 'none' : 'delete')"
+                    :class="{ active: formData.textDecoration === 'delete', disabled: formData.locked }"
+                    @click="!formData.locked && updateProperty('textDecoration', formData.textDecoration === 'delete' ? 'none' : 'delete')"
                   >
                     <i class="ri-strikethrough"></i>
                   </div>
@@ -171,17 +192,29 @@
             <div class="property-input-wrapper" style="grid-column: span 2; justify-content: space-between; margin-bottom: 4px">
               <div class="flip-actions">
                 <el-tooltip content="左对齐" placement="top">
-                  <div class="icon-btn" :class="{ active: formData.textAlign === 'left' }" @click="updateProperty('textAlign', 'left')">
+                  <div
+                    class="icon-btn"
+                    :class="{ active: formData.textAlign === 'left', disabled: formData.locked }"
+                    @click="!formData.locked && updateProperty('textAlign', 'left')"
+                  >
                     <i class="ri-align-left"></i>
                   </div>
                 </el-tooltip>
                 <el-tooltip content="居中" placement="top">
-                  <div class="icon-btn" :class="{ active: formData.textAlign === 'center' }" @click="updateProperty('textAlign', 'center')">
+                  <div
+                    class="icon-btn"
+                    :class="{ active: formData.textAlign === 'center', disabled: formData.locked }"
+                    @click="!formData.locked && updateProperty('textAlign', 'center')"
+                  >
                     <i class="ri-align-center"></i>
                   </div>
                 </el-tooltip>
                 <el-tooltip content="右对齐" placement="top">
-                  <div class="icon-btn" :class="{ active: formData.textAlign === 'right' }" @click="updateProperty('textAlign', 'right')">
+                  <div
+                    class="icon-btn"
+                    :class="{ active: formData.textAlign === 'right', disabled: formData.locked }"
+                    @click="!formData.locked && updateProperty('textAlign', 'right')"
+                  >
                     <i class="ri-align-right"></i>
                   </div>
                 </el-tooltip>
@@ -189,17 +222,29 @@
 
               <div class="flip-actions">
                 <el-tooltip content="顶部对齐" placement="top">
-                  <div class="icon-btn" :class="{ active: formData.verticalAlign === 'top' }" @click="updateProperty('verticalAlign', 'top')">
+                  <div
+                    class="icon-btn"
+                    :class="{ active: formData.verticalAlign === 'top', disabled: formData.locked }"
+                    @click="!formData.locked && updateProperty('verticalAlign', 'top')"
+                  >
                     <i class="ri-align-top"></i>
                   </div>
                 </el-tooltip>
                 <el-tooltip content="垂直居中" placement="top">
-                  <div class="icon-btn" :class="{ active: formData.verticalAlign === 'middle' }" @click="updateProperty('verticalAlign', 'middle')">
+                  <div
+                    class="icon-btn"
+                    :class="{ active: formData.verticalAlign === 'middle', disabled: formData.locked }"
+                    @click="!formData.locked && updateProperty('verticalAlign', 'middle')"
+                  >
                     <i class="ri-align-vertically"></i>
                   </div>
                 </el-tooltip>
                 <el-tooltip content="底部对齐" placement="top">
-                  <div class="icon-btn" :class="{ active: formData.verticalAlign === 'bottom' }" @click="updateProperty('verticalAlign', 'bottom')">
+                  <div
+                    class="icon-btn"
+                    :class="{ active: formData.verticalAlign === 'bottom', disabled: formData.locked }"
+                    @click="!formData.locked && updateProperty('verticalAlign', 'bottom')"
+                  >
                     <i class="ri-align-bottom"></i>
                   </div>
                 </el-tooltip>
@@ -214,6 +259,7 @@
                   v-model="formData.letterSpacing"
                   :controls="false"
                   size="small"
+                  :disabled="formData.locked"
                   class="figma-input input-with-label-2"
                   @change="(val) => updateProperty('letterSpacing', val)"
                 />
@@ -224,6 +270,7 @@
                   v-model="formData.fontSize"
                   :controls="false"
                   size="small"
+                  :disabled="formData.locked"
                   class="figma-input input-with-label-2"
                   @change="(val) => updateProperty('fontSize', val)"
                 />
@@ -234,6 +281,7 @@
                   v-model="formData.lineHeight"
                   :controls="false"
                   size="small"
+                  :disabled="formData.locked"
                   class="figma-input input-with-label-2"
                   @change="(val) => updateProperty('lineHeight', val)"
                 />
@@ -242,7 +290,15 @@
 
             <!-- Text Content -->
             <div class="property-input-wrapper" style="grid-column: span 2; height: auto; align-items: flex-start; padding-top: 4px">
-              <el-input v-model="formData.text" type="textarea" :rows="2" resize="none" class="figma-textarea" @change="(val) => updateProperty('text', val)" />
+              <el-input
+                v-model="formData.text"
+                type="textarea"
+                :rows="2"
+                resize="none"
+                :disabled="formData.locked"
+                class="figma-textarea"
+                @change="(val) => updateProperty('text', val)"
+              />
             </div>
           </div>
         </div>
@@ -261,6 +317,7 @@
               :min="0"
               :max="100"
               size="small"
+              :disabled="formData.locked"
               class="figma-input input-with-label-3"
               @change="(val) => updateProperty('opacity', val / 100)"
             />
@@ -274,6 +331,7 @@
               :precision="0"
               :min="0"
               size="small"
+              :disabled="formData.locked"
               class="figma-input input-with-label-2"
               @change="(val) => updateProperty('cornerRadius', val)"
             />
@@ -288,8 +346,8 @@
         <!-- Fill -->
         <div class="style-row">
           <div class="style-label">填充</div>
-          <div class="color-picker-wrapper">
-            <el-color-picker v-model="formData.fill" show-alpha size="small" @change="(val) => updateProperty('fill', val)" />
+          <div class="color-picker-wrapper" :class="{ disabled: formData.locked }">
+            <el-color-picker v-model="formData.fill" show-alpha size="small" :disabled="formData.locked" @change="(val) => updateProperty('fill', val)" />
             <span class="color-text">{{ getDisplayColor(currentElement?.fill) }}</span>
           </div>
         </div>
@@ -298,8 +356,8 @@
         <div class="style-row">
           <div class="style-label">描边</div>
           <div class="stroke-controls">
-            <div class="color-picker-wrapper">
-              <el-color-picker v-model="formData.stroke" show-alpha size="small" @change="(val) => updateProperty('stroke', val)" />
+            <div class="color-picker-wrapper" :class="{ disabled: formData.locked }">
+              <el-color-picker v-model="formData.stroke" show-alpha size="small" :disabled="formData.locked" @change="(val) => updateProperty('stroke', val)" />
               <span class="color-text">{{ getDisplayColor(currentElement?.stroke) }}</span>
             </div>
             <div class="property-input-wrapper" style="width: 80px">
@@ -310,6 +368,7 @@
                 :precision="1"
                 :min="0"
                 size="small"
+                :disabled="formData.locked"
                 class="figma-input input-with-label-2"
                 @change="(val) => updateProperty('strokeWidth', val)"
               />
@@ -325,7 +384,9 @@
         <!-- Shadow -->
         <div class="effect-row">
           <div class="effect-header">
-            <el-checkbox v-model="formData.shadowEnabled" size="small" @change="(val) => updateProperty('shadowEnabled', val)"> 外阴影 </el-checkbox>
+            <el-checkbox v-model="formData.shadowEnabled" size="small" :disabled="formData.locked" @change="(val) => updateProperty('shadowEnabled', val)">
+              外阴影
+            </el-checkbox>
           </div>
           <div v-if="formData.shadowEnabled" class="effect-controls">
             <div class="property-grid" style="margin-top: 8px">
@@ -336,6 +397,7 @@
                   :controls="false"
                   :precision="1"
                   size="small"
+                  :disabled="formData.locked"
                   class="figma-input"
                   @change="(val) => updateProperty('shadowX', val)"
                 />
@@ -347,6 +409,7 @@
                   :controls="false"
                   :precision="1"
                   size="small"
+                  :disabled="formData.locked"
                   class="figma-input"
                   @change="(val) => updateProperty('shadowY', val)"
                 />
@@ -361,12 +424,19 @@
                   :precision="1"
                   :min="0"
                   size="small"
+                  :disabled="formData.locked"
                   class="figma-input input-with-label-2"
                   @change="(val) => updateProperty('shadowBlur', val)"
                 />
               </div>
-              <div class="color-picker-wrapper">
-                <el-color-picker v-model="formData.shadowColor" show-alpha size="small" @change="(val) => updateProperty('shadowColor', val)" />
+              <div class="color-picker-wrapper" :class="{ disabled: formData.locked }">
+                <el-color-picker
+                  v-model="formData.shadowColor"
+                  show-alpha
+                  size="small"
+                  :disabled="formData.locked"
+                  @change="(val) => updateProperty('shadowColor', val)"
+                />
                 <span class="color-text">颜色</span>
               </div>
             </div>
@@ -376,7 +446,14 @@
         <!-- Inner Shadow -->
         <div class="effect-row" style="margin-top: 12px">
           <div class="effect-header">
-            <el-checkbox v-model="formData.innerShadowEnabled" size="small" @change="(val) => updateProperty('innerShadowEnabled', val)"> 内阴影 </el-checkbox>
+            <el-checkbox
+              v-model="formData.innerShadowEnabled"
+              size="small"
+              :disabled="formData.locked"
+              @change="(val) => updateProperty('innerShadowEnabled', val)"
+            >
+              内阴影
+            </el-checkbox>
           </div>
           <div v-if="formData.innerShadowEnabled" class="effect-controls">
             <div class="property-grid" style="margin-top: 8px">
@@ -387,6 +464,7 @@
                   :controls="false"
                   :precision="1"
                   size="small"
+                  :disabled="formData.locked"
                   class="figma-input"
                   @change="(val) => updateProperty('innerShadowX', val)"
                 />
@@ -398,6 +476,7 @@
                   :controls="false"
                   :precision="1"
                   size="small"
+                  :disabled="formData.locked"
                   class="figma-input"
                   @change="(val) => updateProperty('innerShadowY', val)"
                 />
@@ -412,12 +491,19 @@
                   :precision="1"
                   :min="0"
                   size="small"
+                  :disabled="formData.locked"
                   class="figma-input input-with-label-2"
                   @change="(val) => updateProperty('innerShadowBlur', val)"
                 />
               </div>
-              <div class="color-picker-wrapper">
-                <el-color-picker v-model="formData.innerShadowColor" show-alpha size="small" @change="(val) => updateProperty('innerShadowColor', val)" />
+              <div class="color-picker-wrapper" :class="{ disabled: formData.locked }">
+                <el-color-picker
+                  v-model="formData.innerShadowColor"
+                  show-alpha
+                  size="small"
+                  :disabled="formData.locked"
+                  @change="(val) => updateProperty('innerShadowColor', val)"
+                />
                 <span class="color-text">颜色</span>
               </div>
             </div>
@@ -543,7 +629,9 @@ const formData = reactive({
   innerShadowColor: 'rgba(0,0,0,0.5)',
   // Export properties
   exportScale: 1,
-  exportFormat: 'png'
+  exportFormat: 'png',
+  // Layer State
+  locked: false
 })
 
 const handleExport = async () => {
@@ -629,7 +717,8 @@ const handlePropertyChange = (e) => {
     'italic',
     'textDecoration',
     'shadow',
-    'innerShadow'
+    'innerShadow',
+    'locked'
   ]
 
   if (!relevantProps.includes(e.attrName)) return
@@ -661,6 +750,7 @@ const syncFromElement = (element) => {
   formData.fill = getColorValue(element.fill)
   formData.stroke = getColorValue(element.stroke)
   formData.strokeWidth = element.strokeWidth ?? 0
+  formData.locked = element.locked ?? false
 
   // 同步文本属性
   if (element.tag === 'Text') {
@@ -1065,6 +1155,12 @@ onUnmounted(() => {
   background-color: #f0f0f0;
 }
 
+.icon-btn.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
 /* Customizing Element Plus Input */
 :deep(.figma-input.el-input-number) {
   width: 100%;
@@ -1134,6 +1230,13 @@ onUnmounted(() => {
 .color-picker-wrapper:hover {
   border-color: #e0e0e0;
   background-color: #eeeeee;
+}
+
+.color-picker-wrapper.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background-color: #f5f5f5;
+  border-color: transparent;
 }
 
 .color-text {
