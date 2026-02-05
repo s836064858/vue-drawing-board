@@ -19,6 +19,12 @@
       </div>
     </el-tooltip>
 
+    <el-tooltip content="移动模式 (H)" placement="top">
+      <div class="tool-item" :class="{ active: activeTool === 'move' }" @click="handleToolClick('move')">
+        <i class="ri-drag-move-line"></i>
+      </div>
+    </el-tooltip>
+
     <div class="divider"></div>
 
     <el-tooltip content="钢笔 (P)" placement="top">
@@ -98,6 +104,8 @@ const handleToolClick = (tool) => {
     emit('tool-change', { type: 'mode', value: 'frame' })
   } else if (tool === 'select') {
     emit('tool-change', { type: 'mode', value: 'select' })
+  } else if (tool === 'move') {
+    emit('tool-change', { type: 'mode', value: 'move' })
   } else if (tool === 'pen') {
     emit('tool-change', { type: 'mode', value: 'pen' })
   }

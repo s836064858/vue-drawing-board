@@ -56,6 +56,12 @@ const MODE_CONFIGS = {
     editorVisible: true,
     editorHittable: true,
     hitChildren: true
+  },
+  move: {
+    cursor: 'grab',
+    editorVisible: false,
+    editorHittable: false,
+    hitChildren: false
   }
 }
 
@@ -70,6 +76,12 @@ export const toolMixin = {
     this.app.editor.visible = config.editorVisible
     this.app.editor.hittable = config.editorHittable
     this.app.tree.hitChildren = config.hitChildren
+
+    if (this.app.tree.config.move) {
+      this.app.tree.config.move.drag = mode === 'move' ? true : false
+    } else {
+      this.app.tree.config.move = { drag: mode === 'move' ? true : false }
+    }
 
     // 取消当前选中（除了 select 模式）
     if (mode !== 'select') {
