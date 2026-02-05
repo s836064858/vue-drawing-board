@@ -1,16 +1,26 @@
 <template>
   <el-container class="editor-layout">
-    <el-aside width="250px" class="left-aside">
+    <el-aside :width="isCollapsed ? '0px' : '250px'" class="left-aside" :class="{ collapsed: isCollapsed }">
       <div class="app-brand">
         <div class="logo-wrapper">
           <img :src="logoUrl" alt="Logo" class="logo-img" />
         </div>
         <span class="app-title">Sung Drawing</span>
       </div>
+
       <div class="layer-panel-container">
         <layer-panel />
       </div>
     </el-aside>
+
+    <div class="collapse-btn" @click="toggleCollapse" :style="{ left: isCollapsed ? '0' : '250px' }">
+      <i :class="isCollapsed ? 'ri-arrow-right-s-line' : 'ri-arrow-left-s-line'"></i>
+    </div>
+
+    <div class="collapsed-logo" v-show="isCollapsed">
+      <img :src="logoUrl" alt="Logo" class="mini-logo" />
+    </div>
+
     <el-main class="main-content">
       <canvas-area ref="canvasAreaRef" @mode-change="handleModeChange" />
       <div class="toolbar-container">
@@ -37,6 +47,11 @@ const canvasAreaRef = ref(null)
 const activeTool = ref('select')
 const canUndo = ref(false)
 const canRedo = ref(false)
+const isCollapsed = ref(false)
+
+const toggleCollapse = () => {
+  isCollapsed.value = !isCollapsed.value
+}
 
 // 提供 getCanvasCore 方法给子组件 (LayerPanel) 使用
 provide('getCanvasCore', () => canvasAreaRef.value?.getCanvasCore())
@@ -86,6 +101,7 @@ const handleToolChange = (event) => {
   height: 100vh;
   width: 100vw;
   overflow: hidden;
+  position: relative;
 }
 
 .left-aside {
@@ -94,6 +110,74 @@ const handleToolChange = (event) => {
   border-right: 1px solid #e5e7eb;
   background-color: #fff;
   z-index: 10;
+  transition: width 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.left-aside.collapsed {
+  border-right: none;
+}
+
+.collapse-btn {
+  position: absolute;
+  top: 50%;
+  width: 24px;
+  height: 24px;
+  background-color: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 0 50% 50% 0;
+  border-left: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 20;
+  transform: translateY(-50%);
+  color: #909399;
+  box-shadow: 2px 0 4px rgba(0, 0, 0, 0.05);
+  transition:
+    left 0.3s ease,
+    color 0.2s,
+    box-shadow 0.2s;
+}
+
+.collapse-btn:hover {
+  color: var(--primary-color);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.collapsed-logo {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  width: 32px;
+  height: 32px;
+  z-index: 20;
+  background-color: #fff;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: fadeIn 0.3s ease;
+}
+
+.mini-logo {
+  width: 24px;
+  height: 24px;
+  object-fit: contain;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
 }
 
 .app-brand {
