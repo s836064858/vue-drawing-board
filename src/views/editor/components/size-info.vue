@@ -40,7 +40,7 @@ const bindEvents = (bind = true) => {
 
   // 监听元素变换（拖拽、缩放、旋转）
   // 注意：监听 editor 或 app 上的事件以捕获交互
-  if (bind) {
+  if (method) {
     core.app.on(DragEvent.DRAG, scheduleUpdate)
     core.app.on(ResizeEvent.RESIZE, scheduleUpdate)
     core.app.on(RotateEvent.ROTATE, scheduleUpdate)
