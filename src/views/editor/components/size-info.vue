@@ -7,6 +7,7 @@
 <script setup>
 import { ref, computed, inject, watch, onMounted, onUnmounted } from 'vue'
 import { useStore } from 'vuex'
+import { DragEvent, ResizeEvent, RotateEvent, MoveEvent, ZoomEvent, PropertyEvent } from 'leafer-ui'
 
 const store = useStore()
 const getCanvasCore = inject('getCanvasCore')
@@ -17,9 +18,44 @@ const height = ref(0)
 const left = ref(0)
 const top = ref(0)
 
-let updateTimer = null
+let rafId = null
 
 const selectedLayerIds = computed(() => store.state.selectedLayerIds)
+
+// 使用 requestAnimationFrame 优化更新频率
+const scheduleUpdate = () => {
+  if (rafId) return
+  rafId = requestAnimationFrame(() => {
+    updatePosition()
+    rafId = null
+  })
+}
+
+// 绑定/解绑事件监听
+const bindEvents = (bind = true) => {
+  const core = getCanvasCore()
+  if (!core || !core.app) return
+
+  const method = bind ? 'on' : 'off'
+
+  // 监听元素变换（拖拽、缩放、旋转）
+  // 注意：监听 editor 或 app 上的事件以捕获交互
+  if (bind) {
+    core.app.on(DragEvent.DRAG, scheduleUpdate)
+    core.app.on(ResizeEvent.RESIZE, scheduleUpdate)
+    core.app.on(RotateEvent.ROTATE, scheduleUpdate)
+    core.app.tree.on(MoveEvent.MOVE, scheduleUpdate)
+    core.app.tree.on(ZoomEvent.ZOOM, scheduleUpdate)
+    core.app.on(PropertyEvent.CHANGE, scheduleUpdate)
+  } else {
+    core.app.off(DragEvent.DRAG, scheduleUpdate)
+    core.app.off(ResizeEvent.RESIZE, scheduleUpdate)
+    core.app.off(RotateEvent.ROTATE, scheduleUpdate)
+    core.app.tree.off(MoveEvent.MOVE, scheduleUpdate)
+    core.app.tree.off(ZoomEvent.ZOOM, scheduleUpdate)
+    core.app.off(PropertyEvent.CHANGE, scheduleUpdate)
+  }
+}
 
 // 更新尺寸信息位置
 const updatePosition = () => {
@@ -61,7 +97,7 @@ const updatePosition = () => {
   }
 
   const canvasRect = canvasView.getBoundingClientRect()
-  
+
   // 世界坐标
   const worldX = worldBounds.x
   const worldY = worldBounds.y
@@ -86,22 +122,30 @@ const updatePosition = () => {
 }
 
 // 监听选中变化
-watch(selectedLayerIds, () => {
-  updatePosition()
-}, { immediate: true })
+watch(
+  selectedLayerIds,
+  (newIds) => {
+    updatePosition()
+    // 仅在有选中元素时才更新位置，但事件监听需要一直保持（或者优化为仅在选中时监听交互，全局监听视口）
+    // 为了简单且性能足够好，我们可以一直监听视口变化，但元素交互可以仅在选中时监听
+    // 这里简化为：组件挂载即监听所有相关事件，updatePosition 内部会判断是否 visible
+  },
+  { immediate: true }
+)
 
-// 定时更新位置（处理拖拽、缩放等情况）
 onMounted(() => {
-  updateTimer = setInterval(() => {
-    if (visible.value) {
-      updatePosition()
-    }
-  }, 50)
+  // 延迟绑定，确保 canvasCore 已初始化
+  setTimeout(() => {
+    bindEvents(true)
+    updatePosition()
+  }, 100)
 })
 
 onUnmounted(() => {
-  if (updateTimer) {
-    clearInterval(updateTimer)
+  bindEvents(false)
+  if (rafId) {
+    cancelAnimationFrame(rafId)
+    rafId = null
   }
 })
 </script>
