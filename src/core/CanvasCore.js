@@ -10,12 +10,16 @@ export class CanvasCore {
   constructor(view, callbacks = {}) {
     this.view = view
     this.callbacks = callbacks
-    this.mode = 'select' // 当前模式: select, text, rect, ellipse, diamond
+    this.mode = 'select' // 当前模式: select, text, rect, ellipse, diamond, frame
     
     // 绘制状态
     this.isDrawing = false
     this.startPoint = null
     this.currentDrawingShape = null
+    
+    // Frame 拖拽状态
+    this.isDraggingIntoFrame = false
+    this.highlightedFrame = null
     
     // 事件处理器引用（用于清理）
     this.eventHandlers = {}

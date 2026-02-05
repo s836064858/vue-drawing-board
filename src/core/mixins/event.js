@@ -5,7 +5,7 @@ export const eventMixin = {
   initEvents() {
     const { tree, editor } = this.app
 
-    // 绑定并存储事件处理器引用
+    // 绑定事件处理器
     this.eventHandlers.keydown = this.handleKeydown.bind(this)
     this.eventHandlers.paste = this.handlePaste.bind(this)
     this.eventHandlers.dragover = this.handleDragOver.bind(this)
@@ -21,7 +21,6 @@ export const eventMixin = {
       this.app.view.addEventListener('drop', this.eventHandlers.drop)
     }
 
-    // Leafer 内部事件
     this.initLeaferEvents(tree, editor)
   },
 
@@ -31,7 +30,7 @@ export const eventMixin = {
       this.syncLayers()
     })
 
-    // 监听属性变化（仅监听影响图层列表的属性）
+    // 监听属性变化
     const relevantProps = new Set(['visible', 'locked', 'name', 'tag', 'zIndex', 'text'])
     tree.on(PropertyEvent.CHANGE, (e) => {
       if (relevantProps.has(e.attrName)) {
@@ -49,6 +48,8 @@ export const eventMixin = {
     this.app.on(PointerEvent.DOWN, this.handlePointerDown.bind(this))
     this.app.on(PointerEvent.MOVE, this.handlePointerMove.bind(this))
     this.app.on(PointerEvent.UP, this.handlePointerUp.bind(this))
+    this.app.on(PointerEvent.UP, this.checkFrameIntersection.bind(this))
+    this.app.on(PointerEvent.MOVE, this.updateFrameHighlight.bind(this))
   },
 
   /**
@@ -60,6 +61,84 @@ export const eventMixin = {
            target.isContentEditable
   },
 
+  /**
+   * 获取元素的世界坐标
+   */
+  getElementWorldPosition(element) {
+    const x = element.x || 0
+    const y = element.y || 0
+    
+    // 如果元素在 Frame 内，需要加上 Frame 的坐标
+    if (element.parent && element.parent.tag === 'Frame') {
+      return {
+        x: x + (element.parent.x || 0),
+        y: y + (element.parent.y || 0)
+      }
+    }
+    
+    return { x, y }
+  },
+
+  /**
+   * 获取元素的尺寸
+   */
+  getElementSize(element) {
+    return {
+      width: element.width || 0,
+      height: element.height || 0
+    }
+  },
+
+  /**
+   * 获取元素中心点的世界坐标
+   */
+  getElementWorldCenter(element) {
+    const { x, y } = this.getElementWorldPosition(element)
+    const { width, height } = this.getElementSize(element)
+    
+    return {
+      x: x + width / 2,
+      y: y + height / 2
+    }
+  },
+
+  /**
+   * 检查点是否在矩形内
+   */
+  isPointInRect(pointX, pointY, rectX, rectY, rectWidth, rectHeight) {
+    return pointX >= rectX &&
+           pointX <= rectX + rectWidth &&
+           pointY >= rectY &&
+           pointY <= rectY + rectHeight
+  },
+
+  /**
+   * 查找包含指定点的 Frame
+   */
+  findFrameAtPoint(x, y, excludeElement = null) {
+    const frames = this.app.tree.children.filter(child => child.tag === 'Frame')
+    
+    for (const frame of frames) {
+      if (frame === excludeElement) continue
+
+      const frameX = frame.x || 0
+      const frameY = frame.y || 0
+      const frameWidth = frame.width || 0
+      const frameHeight = frame.height || 0
+
+      if (frameWidth === 0 || frameHeight === 0) continue
+      
+      if (this.isPointInRect(x, y, frameX, frameY, frameWidth, frameHeight)) {
+        return frame
+      }
+    }
+    
+    return null
+  },
+
+  /**
+   * 处理粘贴事件（支持粘贴图片）
+   */
   handlePaste(e) {
     if (this.isEditableElement(e.target)) return
 
@@ -83,6 +162,9 @@ export const eventMixin = {
     e.preventDefault()
   },
 
+  /**
+   * 处理拖拽文件到画布
+   */
   handleDrop(e) {
     e.preventDefault()
     
@@ -94,7 +176,6 @@ export const eventMixin = {
         const file = item.getAsFile()
         if (file) {
           const url = URL.createObjectURL(file)
-          // 转换屏幕坐标到世界坐标
           const point = this.app.tree.getInnerPoint({ x: e.offsetX, y: e.offsetY })
           this.addImage(url, { x: point.x, y: point.y })
         }
@@ -102,6 +183,9 @@ export const eventMixin = {
     }
   },
 
+  /**
+   * 处理点击事件（文字模式）
+   */
   handleTap(e) {
     if (this.mode !== 'text') return
 
@@ -110,8 +194,11 @@ export const eventMixin = {
     this.setMode('select')
   },
 
+  /**
+   * 处理鼠标按下（开始绘制形状）
+   */
   handlePointerDown(e) {
-    const drawingModes = ['rect', 'ellipse', 'diamond']
+    const drawingModes = ['rect', 'ellipse', 'diamond', 'frame']
     if (!drawingModes.includes(this.mode)) return
 
     this.app.editor.cancel()
@@ -122,6 +209,9 @@ export const eventMixin = {
     this.currentDrawingShape = this.createShape(this.mode, x, y)
   },
 
+  /**
+   * 处理鼠标移动（绘制形状过程）
+   */
   handlePointerMove(e) {
     if (!this.isDrawing || !this.currentDrawingShape) return
 
@@ -134,7 +224,7 @@ export const eventMixin = {
     const y = Math.min(currentY, startY)
 
     if (this.mode === 'diamond') {
-      // 菱形的四个顶点：上、右、下、左
+      // 菱形的四个顶点
       this.currentDrawingShape.set({
         x, y, width, height,
         points: [width / 2, 0, width, height / 2, width / 2, height, 0, height / 2]
@@ -144,7 +234,10 @@ export const eventMixin = {
     }
   },
 
-  handlePointerUp(e) {
+  /**
+   * 处理鼠标释放（完成绘制）
+   */
+  handlePointerUp() {
     if (!this.isDrawing) return
 
     this.isDrawing = false
@@ -154,10 +247,8 @@ export const eventMixin = {
       const { width, height } = this.currentDrawingShape
       
       if (width < minSize || height < minSize) {
-        // 图形太小，移除
         this.currentDrawingShape.remove()
       } else {
-        // 选中新绘制的图形
         this.app.editor.select(this.currentDrawingShape)
       }
     }
@@ -165,8 +256,136 @@ export const eventMixin = {
     this.currentDrawingShape = null
     this.startPoint = null
     this.setMode('select')
+    this.clearFrameHighlight()
   },
 
+  /**
+   * 实时更新 Frame 高亮状态（拖拽过程中）
+   */
+  updateFrameHighlight() {
+    if (this.mode !== 'select') return
+    
+    const selectedElements = this.app.editor.list
+    if (!selectedElements || selectedElements.length !== 1) {
+      this.clearFrameHighlight()
+      return
+    }
+
+    const draggedElement = selectedElements[0]
+    if (!draggedElement || draggedElement.tag === 'Frame' || !this.app.editor.dragging) {
+      this.clearFrameHighlight()
+      return
+    }
+
+    const { width, height } = this.getElementSize(draggedElement)
+    if (width === 0 || height === 0) {
+      this.clearFrameHighlight()
+      return
+    }
+
+    const { x: centerX, y: centerY } = this.getElementWorldCenter(draggedElement)
+    const targetFrame = this.findFrameAtPoint(centerX, centerY, draggedElement)
+
+    // 更新高亮状态
+    if (targetFrame !== this.highlightedFrame) {
+      this.clearFrameHighlight()
+      if (targetFrame) {
+        this.highlightFrame(targetFrame)
+      }
+    }
+  },
+
+  /**
+   * 高亮 Frame（显示蓝色边框）
+   */
+  highlightFrame(frame) {
+    this.highlightedFrame = frame
+    
+    if (!frame.__originalStroke) {
+      frame.__originalStroke = frame.stroke
+      frame.__originalStrokeWidth = frame.strokeWidth
+    }
+    
+    frame.stroke = '#409EFF'
+    frame.strokeWidth = 2
+  },
+
+  /**
+   * 清除 Frame 高亮
+   */
+  clearFrameHighlight() {
+    if (this.highlightedFrame) {
+      if (this.highlightedFrame.__originalStroke !== undefined) {
+        this.highlightedFrame.stroke = this.highlightedFrame.__originalStroke
+        this.highlightedFrame.strokeWidth = this.highlightedFrame.__originalStrokeWidth
+        delete this.highlightedFrame.__originalStroke
+        delete this.highlightedFrame.__originalStrokeWidth
+      }
+      
+      this.highlightedFrame = null
+    }
+  },
+
+  /**
+   * 检查元素是否应该移入/移出 Frame
+   */
+  checkFrameIntersection() {
+    setTimeout(() => {
+      const selectedElements = this.app.editor.list
+      
+      if (!selectedElements || selectedElements.length !== 1) return
+
+      const draggedElement = selectedElements[0]
+      
+      if (!draggedElement || draggedElement.tag === 'Frame') return
+
+      const { width, height } = this.getElementSize(draggedElement)
+      if (width === 0 || height === 0) return
+
+      const { x: worldX, y: worldY } = this.getElementWorldPosition(draggedElement)
+      const { x: centerX, y: centerY } = this.getElementWorldCenter(draggedElement)
+
+      // 查找目标 Frame
+      const foundFrame = this.findFrameAtPoint(centerX, centerY, draggedElement)
+
+      const currentParent = draggedElement.parent
+      const isInFrame = currentParent && currentParent.tag === 'Frame'
+      
+      if (foundFrame) {
+        // 元素应该在 Frame 内
+        if (isInFrame && currentParent === foundFrame) return
+        
+        draggedElement.remove()
+
+        // 计算相对于 Frame 的本地坐标
+        const localX = worldX - (foundFrame.x || 0)
+        const localY = worldY - (foundFrame.y || 0)
+        
+        draggedElement.x = localX
+        draggedElement.y = localY
+
+        foundFrame.add(draggedElement)
+        this.app.editor.select(draggedElement)
+        this.syncLayers()
+      } else if (isInFrame) {
+        // 元素应该移出 Frame
+        draggedElement.remove()
+
+        draggedElement.x = worldX
+        draggedElement.y = worldY
+
+        this.app.tree.add(draggedElement)
+        this.app.editor.select(draggedElement)
+        this.syncLayers()
+      }
+      
+      this.clearFrameHighlight()
+    }, 100)
+  },
+
+  /**
+   * 处理键盘事件（删除等）
+   */
   handleKeydown(e) {
     if (this.isEditableElement(e.target)) return
 

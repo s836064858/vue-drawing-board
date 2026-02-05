@@ -1,4 +1,4 @@
-import { Text, Image, Rect, Ellipse, Polygon } from 'leafer-ui'
+import { Text, Image, Rect, Ellipse, Polygon, Frame } from 'leafer-ui'
 
 // 模式配置
 const MODE_CONFIGS = {
@@ -21,6 +21,12 @@ const MODE_CONFIGS = {
     hitChildren: true
   },
   diamond: {
+    cursor: 'crosshair',
+    editorVisible: false,
+    editorHittable: false,
+    hitChildren: true
+  },
+  frame: {
     cursor: 'crosshair',
     editorVisible: false,
     editorHittable: false,
@@ -81,6 +87,17 @@ export const toolMixin = {
           fill: '#0000ff',
           points: [],
           name: '菱形'
+        }
+      },
+      frame: {
+        class: Frame,
+        props: {
+          fill: '#ffffff',
+          stroke: '#e0e0e0',
+          strokeWidth: 1,
+          cornerRadius: 8,
+          name: 'Frame',
+          overflow: 'show'  // 改为 show，让子元素可以超出边界显示
         }
       }
     }

@@ -26,6 +26,12 @@
       </template>
     </el-dropdown>
 
+    <el-tooltip content="Frame (F)" placement="top">
+      <div class="tool-item" :class="{ active: activeTool === 'frame' }" @click="handleToolClick('frame')">
+        <i class="ri-layout-line"></i>
+      </div>
+    </el-tooltip>
+
     <el-tooltip content="文字 (T)" placement="top">
       <div class="tool-item" :class="{ active: activeTool === 'text' }" @click="handleToolClick('text')">
         <i class="ri-text"></i>
@@ -59,6 +65,8 @@ const fileInput = ref(null)
 const handleToolClick = (tool) => {
   if (tool === 'text') {
     emit('tool-change', { type: 'mode', value: 'text' })
+  } else if (tool === 'frame') {
+    emit('tool-change', { type: 'mode', value: 'frame' })
   } else if (tool === 'select') {
     emit('tool-change', { type: 'mode', value: 'select' })
   }

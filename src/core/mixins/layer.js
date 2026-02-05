@@ -15,16 +15,25 @@ export const layerMixin = {
   },
 
   /**
-   * 格式化图层数据
+   * 格式化图层数据（支持子图层）
    */
   formatLayerData(child) {
-    return {
+    const layerData = {
       id: child.innerId,
       name: this.getLayerName(child),
       type: child.tag,
       visible: child.visible !== false,
       locked: child.locked === true
     }
+
+    // 如果是 Frame，递归处理子图层
+    if (child.tag === 'Frame' && child.children && child.children.length > 0) {
+      layerData.children = child.children
+        .map((subChild) => this.formatLayerData(subChild))
+        .reverse()
+    }
+
+    return layerData
   },
 
   /**
