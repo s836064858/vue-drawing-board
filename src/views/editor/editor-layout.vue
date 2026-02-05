@@ -6,7 +6,7 @@
     <el-main class="main-content">
       <canvas-area ref="canvasAreaRef" @mode-change="handleModeChange" />
       <div class="toolbar-container">
-        <toolbar-panel :active-tool="activeTool" @tool-change="handleToolChange" />
+        <toolbar-panel :active-tool="activeTool" :can-undo="canUndo" :can-redo="canRedo" @tool-change="handleToolChange" />
       </div>
       <size-info />
     </el-main>
@@ -17,7 +17,7 @@
 </template>
 
 <script setup>
-import { ref, provide } from 'vue'
+import { ref, provide, onMounted } from 'vue'
 import LayerPanel from './components/layer-panel.vue'
 import CanvasArea from './components/canvas-area.vue'
 import PropertyPanel from './components/property-panel.vue'
@@ -26,6 +26,8 @@ import SizeInfo from './components/size-info.vue'
 
 const canvasAreaRef = ref(null)
 const activeTool = ref('select')
+const canUndo = ref(false)
+const canRedo = ref(false)
 
 // 提供 getCanvasCore 方法给子组件 (LayerPanel) 使用
 provide('getCanvasCore', () => canvasAreaRef.value?.getCanvasCore())
@@ -34,6 +36,23 @@ const handleModeChange = (mode) => {
   activeTool.value = mode
 }
 
+const handleHistoryChange = (state) => {
+  canUndo.value = state.canUndo
+  canRedo.value = state.canRedo
+}
+
+onMounted(() => {
+  // 监听历史记录变化
+  const checkCore = setInterval(() => {
+    const core = canvasAreaRef.value?.getCanvasCore()
+    if (core) {
+      clearInterval(checkCore)
+      // 注入回调
+      core.callbacks.onHistoryChange = handleHistoryChange
+    }
+  }, 100)
+})
+
 const handleToolChange = (event) => {
   const canvasCore = canvasAreaRef.value?.getCanvasCore()
   if (!canvasCore) return
@@ -41,8 +60,14 @@ const handleToolChange = (event) => {
   if (event.type === 'mode') {
     activeTool.value = event.value
     canvasCore.setMode(event.value)
-  } else if (event.type === 'action' && event.value === 'add-image') {
-    canvasCore.addImage(event.data)
+  } else if (event.type === 'action') {
+    if (event.value === 'add-image') {
+      canvasCore.addImage(event.data)
+    } else if (event.value === 'undo') {
+      canvasCore.undo()
+    } else if (event.value === 'redo') {
+      canvasCore.redo()
+    }
   }
 }
 </script>

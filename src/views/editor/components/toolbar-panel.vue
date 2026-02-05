@@ -1,5 +1,18 @@
 <template>
   <div class="toolbar-panel">
+    <el-tooltip content="撤销 (Ctrl+Z)" placement="top" :disabled="!canUndo">
+      <div class="tool-item" :class="{ disabled: !canUndo }" @click="canUndo && handleAction('undo')">
+        <i class="ri-arrow-go-back-line"></i>
+      </div>
+    </el-tooltip>
+    <el-tooltip content="恢复 (Ctrl+Shift+Z)" placement="top" :disabled="!canRedo">
+      <div class="tool-item" :class="{ disabled: !canRedo }" @click="canRedo && handleAction('redo')">
+        <i class="ri-arrow-go-forward-line"></i>
+      </div>
+    </el-tooltip>
+
+    <div class="divider"></div>
+
     <el-tooltip content="选择模式 (V)" placement="top">
       <div class="tool-item" :class="{ active: activeTool === 'select' }" @click="handleToolClick('select')">
         <i class="ri-cursor-fill"></i>
@@ -64,6 +77,14 @@ const props = defineProps({
   activeTool: {
     type: String,
     default: 'select'
+  },
+  canUndo: {
+    type: Boolean,
+    default: false
+  },
+  canRedo: {
+    type: Boolean,
+    default: false
   }
 })
 
@@ -80,6 +101,10 @@ const handleToolClick = (tool) => {
   } else if (tool === 'pen') {
     emit('tool-change', { type: 'mode', value: 'pen' })
   }
+}
+
+const handleAction = (action) => {
+  emit('tool-change', { type: 'action', value: action })
 }
 
 const handleShapeCommand = (command) => {
@@ -133,6 +158,18 @@ const handleFileChange = (e) => {
 .tool-item.active {
   background-color: #ecf5ff;
   color: var(--primary-color);
+}
+
+.tool-item.disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  background-color: transparent;
+  color: #999;
+}
+
+.tool-item.disabled:hover {
+  background-color: transparent;
+  color: #999;
 }
 
 .tool-item i {

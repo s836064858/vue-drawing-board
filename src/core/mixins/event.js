@@ -1,4 +1,4 @@
-import { ChildEvent, PropertyEvent, PointerEvent, Polygon } from 'leafer-ui'
+import { ChildEvent, PropertyEvent, PointerEvent, Polygon, DragEvent, RotateEvent, ResizeEvent } from 'leafer-ui'
 import { EditorEvent } from '@leafer-in/editor'
 
 export const eventMixin = {
@@ -43,6 +43,11 @@ export const eventMixin = {
       this.syncSelection()
     })
 
+    // 监听变换结束（移动、旋转、缩放）
+    editor.on([DragEvent.END, RotateEvent.END, ResizeEvent.END], () => {
+      this.recordState('transform')
+    })
+
     // 画布交互事件
     this.app.on(PointerEvent.TAP, this.handleTap.bind(this))
     this.app.on(PointerEvent.DOWN, this.handlePointerDown.bind(this))
@@ -56,9 +61,7 @@ export const eventMixin = {
    * 检查是否在可编辑元素中
    */
   isEditableElement(target) {
-    return target.tagName === 'INPUT' || 
-           target.tagName === 'TEXTAREA' || 
-           target.isContentEditable
+    return target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable
   },
 
   /**
@@ -74,7 +77,7 @@ export const eventMixin = {
 
     const x = element.x || 0
     const y = element.y || 0
-    
+
     // 如果元素在 Frame 内，需要加上 Frame 的坐标
     if (element.parent && element.parent.tag === 'Frame') {
       return {
@@ -82,7 +85,7 @@ export const eventMixin = {
         y: y + (element.parent.y || 0)
       }
     }
-    
+
     return { x, y }
   },
 
@@ -115,7 +118,7 @@ export const eventMixin = {
 
     const { x, y } = this.getElementWorldPosition(element)
     const { width, height } = this.getElementSize(element)
-    
+
     return {
       x: x + width / 2,
       y: y + height / 2
@@ -126,18 +129,15 @@ export const eventMixin = {
    * 检查点是否在矩形内
    */
   isPointInRect(pointX, pointY, rectX, rectY, rectWidth, rectHeight) {
-    return pointX >= rectX &&
-           pointX <= rectX + rectWidth &&
-           pointY >= rectY &&
-           pointY <= rectY + rectHeight
+    return pointX >= rectX && pointX <= rectX + rectWidth && pointY >= rectY && pointY <= rectY + rectHeight
   },
 
   /**
    * 查找包含指定点的 Frame
    */
   findFrameAtPoint(x, y, excludeElement = null) {
-    const frames = this.app.tree.children.filter(child => child.tag === 'Frame')
-    
+    const frames = this.app.tree.children.filter((child) => child.tag === 'Frame')
+
     for (const frame of frames) {
       if (frame === excludeElement) continue
 
@@ -147,12 +147,12 @@ export const eventMixin = {
       const frameHeight = frame.height || 0
 
       if (frameWidth === 0 || frameHeight === 0) continue
-      
+
       if (this.isPointInRect(x, y, frameX, frameY, frameWidth, frameHeight)) {
         return frame
       }
     }
-    
+
     return null
   },
 
@@ -187,7 +187,7 @@ export const eventMixin = {
    */
   handleDrop(e) {
     e.preventDefault()
-    
+
     const items = e.dataTransfer?.items
     if (!items) return
 
@@ -223,7 +223,7 @@ export const eventMixin = {
 
     this.app.editor.cancel()
     this.isDrawing = true
-    
+
     const { x, y } = this.app.tree.getInnerPoint(e)
     this.startPoint = { x, y }
     this.currentDrawingShape = this.createShape(this.mode, x, y)
@@ -248,7 +248,7 @@ export const eventMixin = {
         const dist = Math.sqrt((currentX - lastX) ** 2 + (currentY - lastY) ** 2)
         if (dist < 2) return
       }
-      
+
       this.currentDrawingShape.set({
         points: [...points, currentX, currentY]
       })
@@ -256,7 +256,7 @@ export const eventMixin = {
     }
 
     // 直线的绘制
-    if (this.mode === 'line'||this.mode === 'arrow') {
+    if (this.mode === 'line' || this.mode === 'arrow') {
       this.currentDrawingShape.set({
         points: [startX, startY, currentX, currentY]
       })
@@ -271,7 +271,10 @@ export const eventMixin = {
     if (this.mode === 'diamond') {
       // 菱形的四个顶点
       this.currentDrawingShape.set({
-        x, y, width, height,
+        x,
+        y,
+        width,
+        height,
         points: [width / 2, 0, width, height / 2, width / 2, height, 0, height / 2]
       })
     } else {
@@ -292,30 +295,31 @@ export const eventMixin = {
       // 钢笔的验证
       if (this.mode === 'pen') {
         const points = this.currentDrawingShape.points
-        if (points.length < 6) { // 至少3个点才算有效线条
+        if (points.length < 6) {
+          // 至少3个点才算有效线条
           this.currentDrawingShape.remove()
         } else {
           const startX = points[0]
           const startY = points[1]
           const endX = points[points.length - 2]
           const endY = points[points.length - 1]
-          
+
           const dx = endX - startX
           const dy = endY - startY
           const dist = Math.sqrt(dx * dx + dy * dy)
-          
+
           // 如果起点和终点距离小于 20，则闭合为自定义图形
           if (dist < 20) {
             // 闭合优化：从尾部开始修剪掉所有距离起点 < 20 的点
             // 这样可以去除为了闭合而画的多余笔迹，使闭合更自然
             let prunedPoints = [...points]
-            
+
             // 至少保留前3个点（6个坐标）
             while (prunedPoints.length > 6) {
               const lastX = prunedPoints[prunedPoints.length - 2]
               const lastY = prunedPoints[prunedPoints.length - 1]
               const d = Math.sqrt((lastX - startX) ** 2 + (lastY - startY) ** 2)
-              
+
               if (d < 20) {
                 prunedPoints.pop()
                 prunedPoints.pop()
@@ -334,8 +338,10 @@ export const eventMixin = {
             this.currentDrawingShape.remove()
             this.app.tree.add(polygon)
             this.app.editor.select(polygon)
+            this.recordState('create-polygon')
           } else {
             this.app.editor.select(this.currentDrawingShape)
+            this.recordState('create-pen')
           }
         }
       } else if (this.mode === 'line') {
@@ -344,11 +350,12 @@ export const eventMixin = {
         const dx = points[2] - points[0]
         const dy = points[3] - points[1]
         const length = Math.sqrt(dx * dx + dy * dy)
-        
+
         if (length < minSize) {
           this.currentDrawingShape.remove()
         } else {
           this.app.editor.select(this.currentDrawingShape)
+          this.recordState('create-line')
         }
       } else if (this.mode === 'arrow') {
         // 箭头的验证
@@ -356,19 +363,21 @@ export const eventMixin = {
         const dx = toPoint.x - this.currentDrawingShape.x
         const dy = toPoint.y - this.currentDrawingShape.y
         const length = Math.sqrt(dx * dx + dy * dy)
-        
+
         if (length < minSize) {
           this.currentDrawingShape.remove()
         } else {
           this.app.editor.select(this.currentDrawingShape)
+          this.recordState('create-arrow')
         }
       } else {
         const { width, height } = this.currentDrawingShape
-        
+
         if (width < minSize || height < minSize) {
           this.currentDrawingShape.remove()
         } else {
           this.app.editor.select(this.currentDrawingShape)
+          this.recordState('create-shape')
         }
       }
     }
@@ -384,7 +393,7 @@ export const eventMixin = {
    */
   updateFrameHighlight() {
     if (this.mode !== 'select') return
-    
+
     const selectedElements = this.app.editor.list
     if (!selectedElements || selectedElements.length !== 1) {
       this.clearFrameHighlight()
@@ -420,12 +429,12 @@ export const eventMixin = {
    */
   highlightFrame(frame) {
     this.highlightedFrame = frame
-    
+
     if (!frame.__originalStroke) {
       frame.__originalStroke = frame.stroke
       frame.__originalStrokeWidth = frame.strokeWidth
     }
-    
+
     frame.stroke = '#409EFF'
     frame.strokeWidth = 2
   },
@@ -441,7 +450,7 @@ export const eventMixin = {
         delete this.highlightedFrame.__originalStroke
         delete this.highlightedFrame.__originalStrokeWidth
       }
-      
+
       this.highlightedFrame = null
     }
   },
@@ -452,11 +461,11 @@ export const eventMixin = {
   checkFrameIntersection() {
     setTimeout(() => {
       const selectedElements = this.app.editor.list
-      
+
       if (!selectedElements || selectedElements.length !== 1) return
 
       const draggedElement = selectedElements[0]
-      
+
       if (!draggedElement || draggedElement.tag === 'Frame') return
 
       const { width, height } = this.getElementSize(draggedElement)
@@ -470,24 +479,25 @@ export const eventMixin = {
 
       const currentParent = draggedElement.parent
       const isInFrame = currentParent && currentParent.tag === 'Frame'
-      
+
       if (foundFrame) {
         // 元素应该在 Frame 内
         if (isInFrame && currentParent === foundFrame) return
-        
+
         draggedElement.remove()
 
         // 计算相对于 Frame 的本地坐标
         const { x: frameWorldX, y: frameWorldY } = this.getElementWorldPosition(foundFrame)
         const localX = worldX - frameWorldX
         const localY = worldY - frameWorldY
-        
+
         draggedElement.x = localX
         draggedElement.y = localY
 
         foundFrame.add(draggedElement)
         this.app.editor.select(draggedElement)
         this.syncLayers()
+        this.recordState('move-into-frame')
       } else if (isInFrame) {
         // 元素应该移出 Frame
         draggedElement.remove()
@@ -498,8 +508,9 @@ export const eventMixin = {
         this.app.tree.add(draggedElement)
         this.app.editor.select(draggedElement)
         this.syncLayers()
+        this.recordState('move-out-of-frame')
       }
-      
+
       this.clearFrameHighlight()
     }, 100)
   },
@@ -510,8 +521,27 @@ export const eventMixin = {
   handleKeydown(e) {
     if (this.isEditableElement(e.target)) return
 
+    // 撤销/恢复快捷键
+    if ((e.metaKey || e.ctrlKey) && e.key === 'z') {
+      e.preventDefault()
+      if (e.shiftKey) {
+        this.redo()
+      } else {
+        this.undo()
+      }
+      return
+    }
+
+    // Redo via Cmd+Y (common on Windows, sometimes Mac)
+    if ((e.metaKey || e.ctrlKey) && e.key === 'y') {
+      e.preventDefault()
+      this.redo()
+      return
+    }
+
     if (e.key === 'Backspace' || e.key === 'Delete') {
       this.removeSelectedLayers()
+      this.recordState('delete')
       e.preventDefault()
     }
   }

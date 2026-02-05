@@ -91,6 +91,7 @@ export const layerMixin = {
     const element = this.findElementById(id)
     if (element) {
       element.visible = !element.visible
+      if (this.recordState) this.recordState('toggle-visible')
     }
   },
 
@@ -101,6 +102,7 @@ export const layerMixin = {
     const element = this.findElementById(id)
     if (element) {
       element.locked = !element.locked
+      if (this.recordState) this.recordState('toggle-lock')
     }
   },
 
@@ -111,6 +113,7 @@ export const layerMixin = {
     const element = this.findElementById(id)
     if (element) {
       element.remove()
+      if (this.recordState) this.recordState('remove-layer')
     }
   },
 
@@ -146,5 +149,6 @@ export const layerMixin = {
     }
 
     this.syncLayers()
+    if (this.recordState) this.recordState('reorder-layer')
   }
 }

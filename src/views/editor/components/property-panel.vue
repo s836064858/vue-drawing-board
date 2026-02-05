@@ -664,6 +664,11 @@ const updateProperty = async (key, value) => {
     } else {
       currentElement.value[key] = value
     }
+
+    const canvasCore = getCanvasCore()
+    if (canvasCore && canvasCore.recordState) {
+      canvasCore.recordState('property-change')
+    }
   } finally {
     // 使用 nextTick 确保 DOM 更新后再解锁
     await nextTick()

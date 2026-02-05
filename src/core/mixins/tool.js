@@ -1,5 +1,5 @@
 import { Text, Image, Rect, Ellipse, Polygon, Frame, Line } from 'leafer-ui'
-import { Arrow } from '@leafer-in/arrow' 
+import { Arrow } from '@leafer-in/arrow'
 
 // 模式配置
 const MODE_CONFIGS = {
@@ -163,7 +163,6 @@ export const toolMixin = {
       return line
     }
 
-
     const shape = new config.class({
       x,
       y,
@@ -235,6 +234,9 @@ export const toolMixin = {
       })
       this.app.tree.add(image)
       this.app.editor.select(image)
+      if (this.recordState) {
+        this.recordState('add-image')
+      }
     }
   },
 
@@ -257,6 +259,9 @@ export const toolMixin = {
 
     this.app.tree.add(text)
     this.app.editor.select(text)
+    if (this.recordState) {
+      this.recordState('add-text')
+    }
     return text
   },
 

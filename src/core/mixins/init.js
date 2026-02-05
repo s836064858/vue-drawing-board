@@ -30,6 +30,11 @@ export const initMixin = {
 
     // 初始同步
     this.syncLayers()
+
+    // 初始化历史记录
+    if (this.initHistory) {
+      this.initHistory()
+    }
   },
 
   initPlugins() {
@@ -56,7 +61,7 @@ export const initMixin = {
     const { keydown, paste, dragover, drop } = this.eventHandlers
     if (keydown) window.removeEventListener('keydown', keydown)
     if (paste) window.removeEventListener('paste', paste)
-    
+
     if (this.app.view) {
       if (dragover) this.app.view.removeEventListener('dragover', dragover)
       if (drop) this.app.view.removeEventListener('drop', drop)
