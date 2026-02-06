@@ -7,7 +7,8 @@
         hovered: isHovered,
         'is-dragging': draggingId === layer.id,
         'drag-over-top': dragOverId === layer.id && dropPosition === 'before',
-        'drag-over-bottom': dragOverId === layer.id && dropPosition === 'after'
+        'drag-over-bottom': dragOverId === layer.id && dropPosition === 'after',
+        'drag-over-inside': dragOverId === layer.id && dropPosition === 'inside'
       }"
       :style="{ paddingLeft: `${depth * 16 + 12}px` }"
       draggable="true"
@@ -288,6 +289,12 @@ const getTypeIcon = (type) => {
   background-color: var(--el-color-primary);
   z-index: 10;
   pointer-events: none;
+}
+
+.layer-item.drag-over-inside {
+  background-color: rgba(131, 109, 255, 0.1);
+  outline: 2px solid var(--primary-color);
+  outline-offset: -2px;
 }
 
 /* 选中状态指示条 - 稍微调整样式 */

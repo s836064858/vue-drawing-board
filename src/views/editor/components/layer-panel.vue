@@ -203,8 +203,21 @@ const onDragOver = (e, layer) => {
 
   const rect = e.currentTarget.getBoundingClientRect()
   const offsetY = e.clientY - rect.top
+  const height = rect.height
 
-  if (offsetY < rect.height / 2) {
+  // 检查是否是 Frame，如果是，则允许拖入
+  const isContainer = layer.type === 'Frame' || layer.type === 'Group'
+
+  if (isContainer) {
+    // 容器判定区域：中间 50%
+    const threshold = height * 0.25
+    if (offsetY > threshold && offsetY < height - threshold) {
+      dropPosition.value = 'inside'
+      return
+    }
+  }
+
+  if (offsetY < height / 2) {
     dropPosition.value = 'before'
   } else {
     dropPosition.value = 'after'

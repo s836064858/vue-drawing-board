@@ -218,11 +218,12 @@ export const layerMixin = {
    * 图层重排序
    * @param {string} dragId 拖拽元素的ID
    * @param {string} targetId 目标元素的ID
-   * @param {string} position 'before' | 'after' (相对于目标元素在图层列表中的位置)
+   * @param {string} position 'before' | 'after' | 'inside' (相对于目标元素的位置)
    *
    * 注意：图层列表是倒序显示的 (z-index大的在上面)
    * - position 'before' (视觉上方) -> z-index 更大 -> children 数组中在 target 后面
    * - position 'after' (视觉下方) -> z-index 更小 -> children 数组中在 target 前面
+   * - position 'inside' -> 成为 target 的子元素 (target 必须是容器)
    */
   reorderLayer(dragId, targetId, position) {
     const dragLayer = this.findElementById(dragId)
@@ -230,20 +231,54 @@ export const layerMixin = {
 
     if (!dragLayer || !targetLayer || dragLayer === targetLayer) return
 
+    // 记录原始状态以便撤销（简单起见，这里记录操作名）
+    // 实际撤销由历史记录快照处理
+
+    // 计算世界坐标，以便在移动后保持视觉位置不变
+    const worldPosition = this.getElementWorldPosition(dragLayer)
+
     // 移除拖拽元素
     dragLayer.remove()
 
-    // 获取目标元素索引（在 remove 之后）
-    const children = this.app.tree.children
-    const targetIndex = children.indexOf(targetLayer)
-
-    if (targetIndex === -1) {
-      // 异常情况，添加到最顶层
-      this.app.tree.add(dragLayer)
+    if (position === 'inside') {
+      // 拖入容器内部
+      if (targetLayer.tag === 'Frame' || targetLayer.tag === 'Group') {
+        // 添加到容器末尾（最上层）
+        targetLayer.add(dragLayer)
+      } else {
+        // 如果目标不是容器，回退到 after
+        const parent = targetLayer.parent || this.app.tree
+        const index = parent.children.indexOf(targetLayer)
+        parent.add(dragLayer, index)
+      }
     } else {
-      const insertIndex = position === 'before' ? targetIndex + 1 : targetIndex
-      this.app.tree.add(dragLayer, insertIndex)
+      // 拖到目标元素的上方或下方
+      const parent = targetLayer.parent || this.app.tree
+      const targetIndex = parent.children.indexOf(targetLayer)
+
+      if (targetIndex === -1) {
+        parent.add(dragLayer)
+      } else {
+        const insertIndex = position === 'before' ? targetIndex + 1 : targetIndex
+        parent.add(dragLayer, insertIndex)
+      }
     }
+
+    // 更新位置以保持视觉一致性
+    // 1. 获取新父级的世界坐标
+    const newParent = dragLayer.parent
+    let parentWorldX = 0
+    let parentWorldY = 0
+
+    if (newParent && newParent.tag !== 'App' && newParent.tag !== 'Leafer') {
+      const parentWorldPos = this.getElementWorldPosition(newParent)
+      parentWorldX = parentWorldPos.x
+      parentWorldY = parentWorldPos.y
+    }
+
+    // 2. 设置新的本地坐标
+    dragLayer.x = worldPosition.x - parentWorldX
+    dragLayer.y = worldPosition.y - parentWorldY
 
     this.syncLayers()
     if (this.recordState) this.recordState('reorder-layer')
