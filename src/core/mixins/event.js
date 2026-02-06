@@ -168,7 +168,7 @@ export const eventMixin = {
     if (this.isEditableElement(e.target)) return
 
     const items = e.clipboardData?.items
-    
+
     // 如果没有剪贴板项，尝试粘贴图层
     if (!items) {
       if (this.clipboard && this.clipboard.length > 0) {
@@ -180,7 +180,7 @@ export const eventMixin = {
 
     // 优先检查是否有图片
     const hasImage = this.tryPasteImage(items)
-    
+
     if (hasImage) {
       e.preventDefault()
       return
@@ -241,6 +241,9 @@ export const eventMixin = {
    */
   handleTap(e) {
     if (this.mode !== 'text') return
+
+    // 恢复交互能力
+    this.app.tree.hitChildren = true
 
     const { x, y } = this.app.tree.getInnerPoint(e)
     this.addText(x, y)
@@ -322,8 +325,11 @@ export const eventMixin = {
     if (!this.isDrawing) return
 
     this.isDrawing = false
+    // 恢复交互能力，防止 editor.select 出错
+    this.app.tree.hitChildren = true
+
     const minSize = 5
-    
+
     // 重置粘贴偏移计数器
     this.resetPasteOffset()
 
@@ -556,10 +562,10 @@ export const eventMixin = {
    */
   handleElementHoverStart(e) {
     const element = e.target
-    
+
     // 忽略内部元素和画布本身
     if (!element || element.isInternal || element === this.app.tree) return
-    
+
     // 如果正在绘制或拖拽，不触发高亮
     if (this.isDrawing || this.app.editor.dragging) return
 
@@ -574,7 +580,7 @@ export const eventMixin = {
    */
   handleElementHoverEnd(e) {
     const element = e.target
-    
+
     // 忽略内部元素和画布本身
     if (!element || element.isInternal || element === this.app.tree) return
 
@@ -603,7 +609,7 @@ export const eventMixin = {
     if (isMod && e.key === 'd') {
       e.preventDefault()
       const selected = this.app.editor.list
-      
+
       if (selected.length === 1) {
         // 单选：直接复制该图层
         this.duplicateLayer(selected[0].innerId)

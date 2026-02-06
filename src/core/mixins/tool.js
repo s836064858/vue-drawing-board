@@ -8,49 +8,49 @@ const MODE_CONFIGS = {
     cursor: 'text',
     editorVisible: true,
     editorHittable: true,
-    hitChildren: true
+    hitChildren: false
   },
   rect: {
     cursor: 'crosshair',
     editorVisible: false,
     editorHittable: false,
-    hitChildren: true
+    hitChildren: false
   },
   ellipse: {
     cursor: 'crosshair',
     editorVisible: false,
     editorHittable: false,
-    hitChildren: true
+    hitChildren: false
   },
   diamond: {
     cursor: 'crosshair',
     editorVisible: false,
     editorHittable: false,
-    hitChildren: true
+    hitChildren: false
   },
   frame: {
     cursor: 'crosshair',
     editorVisible: false,
     editorHittable: false,
-    hitChildren: true
+    hitChildren: false
   },
   line: {
     cursor: 'crosshair',
     editorVisible: false,
     editorHittable: false,
-    hitChildren: true
+    hitChildren: false
   },
   arrow: {
     cursor: 'crosshair',
     editorVisible: false,
     editorHittable: false,
-    hitChildren: true
+    hitChildren: false
   },
   pen: {
     cursor: 'crosshair',
     editorVisible: false,
     editorHittable: false,
-    hitChildren: true
+    hitChildren: false
   },
   select: {
     cursor: 'auto',
@@ -200,7 +200,7 @@ export const toolMixin = {
   addImage(url, options = {}) {
     // 重置粘贴偏移计数器
     this.resetPasteOffset()
-    
+
     // 使用原生的 Image 对象预加载以获取尺寸
     const img = new window.Image()
     img.src = url
@@ -266,7 +266,7 @@ export const toolMixin = {
   addText(x, y) {
     // 重置粘贴偏移计数器
     this.resetPasteOffset()
-    
+
     const scale = this.app.tree.scaleX || 1
     const fontSize = 24 / scale
 
@@ -278,7 +278,7 @@ export const toolMixin = {
       fontSize,
       editable: true,
       draggable: true,
-      fontFamily:'SimHei, STHeiti, sans-serif'
+      fontFamily: 'SimHei, STHeiti, sans-serif'
     })
 
     this.app.tree.add(text)
