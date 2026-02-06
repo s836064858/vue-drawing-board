@@ -11,6 +11,10 @@
       <div class="layer-panel-container">
         <layer-panel />
       </div>
+
+      <div class="copyright-info">
+        <span>© 2026 Sung Drawing by 荛子</span>
+      </div>
     </el-aside>
 
     <div class="collapse-btn" @click="toggleCollapse" :style="{ left: isCollapsed ? '0' : '250px' }">
@@ -219,6 +223,19 @@ const handleToolChange = (event) => {
 /* 覆盖 layer-panel 的边框，因为已经移到 aside 上了 */
 :deep(.layer-panel) {
   border-right: none !important;
+}
+
+.copyright-info {
+  padding: 12px;
+  text-align: center;
+  font-size: 11px;
+  color: #9ca3af;
+  border-top: 1px solid #f3f4f6;
+  background-color: #fff;
+  flex-shrink: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .main-content {
